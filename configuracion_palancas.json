@@ -1,0 +1,39 @@
+{
+  "levers": [
+    {
+      "id": "1778860989256",
+      "moduleIds": [
+        "1778860755764"
+      ],
+      "name": "Mejorar la productividad de los FTEs de RR.HH.",
+      "leverValueDescription": "Racional del beneficio",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Número de FTEs de RR.HH.",
+          "type": "number"
+        },
+        {
+          "id": "q2",
+          "text": "Costo promedio anual de un administrador de RR.HH.",
+          "type": "currency"
+        }
+      ],
+      "baseLineFormula": "q1*q2",
+      "baseLineFormat": "currency",
+      "kpiFormula": "(100*q1)/q2",
+      "kpiFormat": "number",
+      "leverDescription": "Número de FTEs de RR.HH. por cada 100 empleados",
+      "benefitMin": 20,
+      "benefitMax": 50,
+      "benefitType": "reduction"
+    }
+  ],
+  "modules": [
+    {
+      "id": "1778860755764",
+      "name": "SAP SuccessFactors Employee Central"
+    }
+  ],
+  "inputValues": {}
+}

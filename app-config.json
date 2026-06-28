@@ -1,0 +1,179 @@
+{
+  "version": "1.0.1",
+  "lastUpdated": "2026-06-26",
+  "parameters": {
+    "discountRate": "10",
+    "defaultAdoptionCurve": {
+      "1": "30",
+      "2": "70",
+      "3": "100"
+    },
+    "defaultAdoptionYears": 3,
+    "currencies": [
+      {
+        "value": "USD",
+        "label": "Dólar Americano (USD)",
+        "symbol": "$",
+        "locale": "en-US"
+      },
+      {
+        "value": "MXN",
+        "label": "Peso Mexicano (MXN)",
+        "symbol": "$",
+        "locale": "es-MX"
+      },
+      {
+        "value": "EUR",
+        "label": "Euro (EUR)",
+        "symbol": "€",
+        "locale": "de-DE"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "1778618957937",
+      "name": "SAP SFSF Employee Central"
+    },
+    {
+      "id": "1778618968872",
+      "name": "SAP SFSF Recruiting"
+    },
+    {
+      "id": "1778715587825",
+      "name": "SAP SFSF Onboarding"
+    },
+    {
+      "id": "1778715598539",
+      "name": "SAP SFSF Employee Central Payroll"
+    },
+    {
+      "id": "1778715621919",
+      "name": "SAP SFSF Performance & Goals"
+    },
+    {
+      "id": "1778715767385",
+      "name": "SAP SFSF Compensation"
+    },
+    {
+      "id": "1778715786536",
+      "name": "SAP SFSF Learning"
+    },
+    {
+      "id": "1778715797687",
+      "name": "SAP SFSF Career & Talent Development"
+    },
+    {
+      "id": "1782511422661",
+      "name": "SAP Módulo de Prueba"
+    }
+  ],
+  "levers": [
+    {
+      "id": "1778611540701",
+      "moduleIds": [
+        "1778618957937"
+      ],
+      "name": "Mejorar la productividad de los FTEs de RR.HH.",
+      "leverValueDescription": "Mejora la eficiencia del equipo de Recursos Humanos reduciendo tareas manuales y administrativas.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Número de FTEs de RR.HH.",
+          "type": "number"
+        },
+        {
+          "id": "q2",
+          "text": "Costo promedio anual de un FTE de RR.HH.",
+          "type": "currency"
+        },
+        {
+          "id": "q3",
+          "text": "Número de empleados",
+          "type": "number"
+        }
+      ],
+      "baseLineFormula": "q1 * q2",
+      "baseLineFormat": "currency",
+      "kpiFormula": "(100*q1)/q3",
+      "kpiFormat": "percentage",
+      "leverDescription": "FTEs de RR.HH. por cada 100 empleados",
+      "benefitMin": 10,
+      "benefitMax": 20,
+      "benefitType": "reduction"
+    },
+    {
+      "id": "1778621586594",
+      "moduleIds": [
+        "1778618968872"
+      ],
+      "name": "Reducir el tiempo para ocupar posiciones vacantes",
+      "leverValueDescription": "Disminuye el tiempo que permanecen abiertas las posiciones críticas, reduciendo el impacto en la productividad.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Tiempo para ocupar una posición vacante (en días)",
+          "type": "number"
+        },
+        {
+          "id": "q2",
+          "text": "Revenue perdido por día laboral",
+          "type": "currency"
+        },
+        {
+          "id": "q3",
+          "text": "Posiciones difíciles de ocupar",
+          "type": "number"
+        }
+      ],
+      "baseLineFormula": "q1*q2*q3",
+      "baseLineFormat": "currency",
+      "kpiFormula": "q3",
+      "kpiFormat": "number",
+      "leverDescription": "Tiempo para ocupar posiciones vacantes (en días)",
+      "benefitMin": 5,
+      "benefitMax": 10,
+      "benefitType": "reduction"
+    },
+    {
+      "id": "1778717500150",
+      "moduleIds": [
+        "1778618957937",
+        "1778618968872",
+        "1778715587825",
+        "1778715598539",
+        "1778715621919",
+        "1778715767385",
+        "1778715786536",
+        "1778715797687"
+      ],
+      "name": "Reducir la rotación voluntaria de personal",
+      "leverValueDescription": "Reduce los costos asociados a la pérdida de talento y los gastos de recontratación e inducción.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Tasa de Rotación Voluntaria Anual",
+          "type": "percentage"
+        },
+        {
+          "id": "q2",
+          "text": "Número de Empleados",
+          "type": "number"
+        },
+        {
+          "id": "q3",
+          "text": "Costo promedio de contratación de un colaborador",
+          "type": "currency"
+        }
+      ],
+      "baseLineFormula": "q1 * q2 * q3",
+      "baseLineFormat": "currency",
+      "kpiFormula": "q1",
+      "kpiFormat": "percentage",
+      "leverDescription": "Tasa de Rotación Voluntaria Anual",
+      "benefitMin": 1,
+      "benefitMax": 3,
+      "benefitType": "reduction"
+    }
+  ]
+}

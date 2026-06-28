@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Beneficios por Palancas de Valor</title>
+    <link rel="icon" type="image/png" href="bar-chart.png">
+    <link rel="apple-touch-icon" href="bar-chart.png">
+    <meta name="msapplication-TileImage" content="bar-chart.png">
+    <meta name="theme-color" content="#4db6ac">
+    <script src="libs/math.min.js"></script>
+    <link href="libs/material-symbols/material-symbols.css" rel="stylesheet" />
+    <script src="libs/chart.umd.min.js"></script>
+    <script src="libs/pptxgen.bundle.js"></script>
+    <script src="libs/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #005A9C;
+            --secondary-color: #003B64;
+            --accent-color: #FDB813;
+            --bg-color: #f4f7fc;
+            --text-color: #333;
+            --border-color: #dce1eb;
+            --card-bg: #ffffff;
+            --success-color: #28a745;
+            --info-color: #17a2b8;
+            --shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+        header {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            color: var(--secondary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .total-benefit-container {
+            text-align: right;
+        }
+        .total-benefit-container .label {
+            font-size: 1em;
+            color: #555;
+        }
+        .total-benefit-container .value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .benefit-value-row { display: flex; align-items: baseline; gap: 8px; }
+        .header-currency-badge { font-size: 0.72em; color: #777; font-weight: 600; background: #f0f4fa; padding: 2px 7px; border-radius: 4px; }
+        .header-kpi-row { display: flex; gap: 16px; border-top: 1px solid #e8edf5; padding-top: 6px; }
+        .header-kpi-item { display: flex; flex-direction: column; align-items: center; min-width: 52px; }
+        .header-kpi-label { font-size: 0.65em; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .header-kpi-value { font-size: 0.9em; font-weight: 700; color: var(--primary-color); }
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1.1em;
+            color: #777;
+            position: relative;
+            bottom: -2px;
+        }
+        .tab-btn.active {
+            font-weight: bold;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        button.secondary { background-color: #6c757d; }
+        button.secondary:hover { background-color: #5a6268; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        button.success { background-color: var(--success-color); }
+        button.success:hover { background-color: #218838; }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .formula-group { display: flex; gap: 15px; align-items: flex-start; }
+        .formula-group .formula-input { flex-grow: 1; }
+        .formula-group .format-selector { width: 150px; }
+        .question-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .question-item input { margin-bottom: 0; }
+        .question-item .question-id { flex: 1; }
+        .question-item .question-text { flex: 3; }
+        .question-item .question-type { flex: 1.5; margin-bottom: 0; }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .result-item { background-color: var(--bg-color); padding: 15px; border-radius: 5px; text-align: center; }
+        .result-item .label { font-size: 0.9em; color: #666; }
+        .result-item .value { font-size: 1.5em; font-weight: bold; color: var(--primary-color); }
+        .result-item .value.benefit { color: var(--success-color); }
+        .benefit-slider-container label { display: block; margin-bottom: 10px; font-weight: bold; text-align: center; }
+        .config-list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px; }
+        .char-counter { font-size: 0.8em; color: #666; text-align: right; margin-top: -10px; }
+        .formula-hint { font-size: 0.85em; color: #666; margin-top: -10px; margin-bottom: 15px; }
+        .io-buttons { display: flex; gap: 15px; }
+        .module-tag { background-color: var(--info-color); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; }
+
+        details { margin-top: 20px; background-color: #f8f9fa; border: 1px solid var(--border-color); border-radius: 5px; padding: 10px 15px; }
+        details.card { padding: 0; background-color: var(--card-bg); }
+        summary { font-weight: bold; cursor: pointer; color: var(--primary-color); list-style: revert; }
+        details.card > summary { padding: 25px; }
+        details.card > summary h2 { display: inline; margin: 0; font-size: 1.5em; }
+        .details-content { padding-top: 10px; font-size: 0.9em; color: #444; }
+        details.card .details-content { padding: 0 25px 25px 25px; font-size: 1em; }
+        .details-content p { margin: 5px 0; }
+        .details-content code { background-color: #e9ecef; padding: 2px 5px; border-radius: 3px; }
+        .calc-results-grid .details-content code { word-break: break-all; } /* Evita que las fórmulas largas rompan el layout */
+        
+        /* Nuevos estilos para la tabla de la calculadora */
+        .calculator-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .calculator-table th, .calculator-table td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        .calculator-table th { background-color: var(--bg-color); font-weight: bold; }
+        .calculator-table td:nth-child(2), .calculator-table td:nth-child(3) { text-align: center; font-weight: bold; font-size: 1.1em; }
+        .calculator-table td:nth-child(1) { font-weight: 500; }
+        .benefit-range { text-align: center; color: #555; margin-top: -15px; margin-bottom: 20px; font-style: italic; }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 25px 0; }
+
+        /* --- Nuevos estilos para la calculadora rediseñada --- */
+        .calc-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .calc-card-header h2 { margin: 0; line-height: 1.2; }
+        .calc-card-header .lever-description-display { font-size: 0.9em; color: #666; margin-top: 4px; font-style: italic; max-width: 95%; }
+        .calc-card-header .benefit-display { text-align: right; }
+        .calc-card-header .benefit-display .label { font-size: 0.9em; color: #666; }
+        .calc-card-header .benefit-display .value { font-size: 1.7em; font-weight: bold; color: var(--success-color); line-height: 1; }
+
+        .calc-slider-container { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .calc-slider-container .range-text { font-size: 0.9em; color: #666; white-space: nowrap; }
+        .calc-slider-container input[type="range"] { flex-grow: 1; }
+        .calc-slider-container .value-text { font-weight: bold; color: var(--primary-color); min-width: 50px; text-align: right; }
+
+        .calc-results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr) 2.5fr; /* 4 columnas de datos, 1 columna ancha para controles */
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .calc-results-grid .result-item { background: none; padding: 0; text-align: left; border-right: 1px solid var(--border-color); padding-right: 15px; }
+        .calc-results-grid .result-item:nth-child(4) { border-right: none; padding-right: 0; }
+        .calc-results-grid .controls-column { display: flex; flex-direction: column; justify-content: center; gap: 10px; align-items: stretch; padding-left: 20px; border-left: 1px solid var(--border-color); min-width: 0; }
+        .kpi-description-display { grid-column: 1 / -1; font-size: 0.95em; color: #555; background-color: var(--bg-color); padding: 12px 15px; border-radius: 6px; border: 1px dashed #b9c4d6; margin-top: 5px; font-style: italic; }
+        
+        .calc-results-grid .result-item .label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
+        .calc-results-grid .result-item .value { font-size: 1.4em; font-weight: bold; color: var(--primary-color); }
+        .calc-results-grid .result-item:nth-child(3) .value, .calc-results-grid .result-item:nth-child(4) .value { color: var(--success-color); }
+        .details-row { grid-column: 1 / -1; margin-top: 10px; }
+        .lever-module-tags-container { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; min-height: 0; }
+        .calc-results-grid .calc-slider-container { margin-bottom: 0; width: 100%; }
+
+        /* Estilos para la pestaña de Ingreso de Datos */
+        .data-input-row { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .data-input-row label { flex: 1; margin-bottom: 0; font-weight: normal; }
+        .data-input-row input { flex: 1; margin-bottom: 0; }
+        .data-type-tag {
+            background-color: #e9ecef; color: #495057; padding: 5px 12px;
+            border-radius: 4px; font-size: 0.85em; white-space: nowrap;
+            min-width: 80px; text-align: center;
+        }
+
+        /* ===== ESTILOS CALCULADORA DE INDICADORES FINANCIEROS ===== */
+
+        /* --- Toolbar (reemplaza top-bar fija de Calculadora.html) --- */
+        .calc-toolbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 0;
+        }
+        .calc-toolbar .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .calc-toolbar .header-title {
+            font-size: 1.5rem;
+            color: #003366;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .calc-toolbar .header-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        #version-switcher {
+            padding: 8px 12px; font-size: 0.9rem; border-radius: 6px;
+            border: 1px solid #ccc; background-color: #f8f9fa;
+            font-weight: 500; cursor: pointer; width: 300px; max-width: 300px;
+            text-overflow: ellipsis;
+        }
+        .calc-toolbar button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .calc-toolbar button:active { transform: scale(0.98); }
+        #new-btn, #open-btn, #save-btn { background-color: #e0e0e0; color: #333; }
+        #new-btn:hover, #open-btn:hover, #save-btn:hover { background-color: #d1d1d1; }
+        #calculate-btn { background-color: #0056b3; color: white; }
+        #calculate-btn:hover { background-color: #004494; }
+        #export-pptx-btn { background-color: #D24726; color: white; }
+        #export-pptx-btn:hover { background-color: #b83b1f; }
+
+        /* --- Layout Principal Calculadora --- */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            padding: 24px;
+            width: 100%;
+        }
+        .input-panel, .output-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            min-width: 0;
+        }
+
+        /* --- Tarjetas Calculadora (scoped para no afectar index) --- */
+        #calculadora-container .card, #dashboardView .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 0;
+        }
+        #calculadora-container .card h2, #dashboardView .card h2 {
+            font-size: 1.2rem;
+            color: #003366;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #ingresoView .main-container { grid-template-columns: 1fr 1fr; max-width: 1200px; margin: 0 auto; gap: 24px; }
+        #ingresoView > .calc-toolbar { padding: 0; }
+        .toolbar-inner { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 24px; }
+        #dashboardView .output-panel { padding: 24px; }
+        .section-icon { font-size: 1.5rem; color: #0056b3; }
+
+        /* --- Formularios Calculadora (scoped) --- */
+        .form-section { display: flex; flex-direction: column; gap: 15px; }
+        .input-group { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 10px; }
+        #calculadora-container label { font-weight: 500; color: #555; font-size: 0.9rem; }
+        #calculadora-container input[type="text"],
+        #calculadora-container input[type="number"],
+        #calculadora-container select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            background-color: white;
+        }
+        #calculadora-container input[type="text"]:focus,
+        #calculadora-container input[type="number"]:focus,
+        #calculadora-container select:focus { border-color: #0056b3; outline: none; }
+        .yearly-inputs-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .yearly-input-group { display: flex; flex-direction: column; gap: 5px; }
+        .section-error { display: none; color: red; font-size: 0.82rem; margin-top: 4px; }
+
+        /* --- Otros Costos/Beneficios --- */
+        .other-item-entry { background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; position: relative; }
+        .other-item-header { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        .other-item-header input[type="text"] { flex: 2; min-width: 150px; }
+        .other-item-header select { flex: 1; min-width: 120px; }
+        .delete-btn { background-color: #dc3545; color: white; border: none; border-radius: 4px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
+        .delete-btn:hover { background-color: #c82333; }
+        #add-other-item-btn { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; margin-bottom: 15px; font-size: 0.9rem; }
+        #add-other-item-btn:hover { background-color: #218838; }
+
+        /* --- Panel de Salida --- */
+        #chart-container { position: relative; width: 100%; min-height: 350px; }
+
+        /* --- Cajas de Métricas --- */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .metric-box { background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; }
+        #vpn-metric-box { cursor: pointer; transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out; }
+        #vpn-metric-box:hover { box-shadow: 0 6px 16px rgba(0, 91, 179, 0.1); transform: translateY(-2px); }
+        .info-icon { font-size: 1.1rem; color: #adb5bd; cursor: help; transition: color 0.2s; }
+        .info-icon:hover { color: #0056b3; }
+        .metric-header { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .metric-icon { color: #0056b3; font-size: 1.6rem; }
+        .metric-title { font-weight: 600; color: #495057; font-size: 0.9rem; flex-grow: 1; }
+        .metric-tag { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; font-weight: 500; }
+        .positive-bg { background-color: #e6f9f0; color: #1a8a52; }
+        .negative-bg { background-color: #fdecec; color: #dc3545; }
+        .metric-value-container .value { font-size: 2.1rem; font-weight: 700; line-height: 1.2; }
+        .metric-description { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+        .positive { color: #1a8a52; }
+        .negative { color: #dc3545; }
+        .positive-text { color: #1a8a52; }
+        .negative-text { color: #dc3545; }
+
+        /* --- Tabla Flujo de Efectivo --- */
+        .cash-flow-table-container { overflow-x: auto; }
+        #cash-flow-table { width: 100%; border-collapse: collapse; }
+        #cash-flow-table th, #cash-flow-table td { padding: 12px; text-align: right; border-bottom: 1px solid #ddd; }
+        #cash-flow-table th { background-color: #f2f2f2; font-weight: 600; }
+        #cash-flow-table td:first-child, #cash-flow-table th:first-child { text-align: left; font-weight: 500; }
+        #cash-flow-net td { border-top: 2px solid #333; }
+        #cash-flow-cumulative td { font-weight: bold; border-top: 2px solid #333; }
+        #cash-flow-cumulative td:first-child { color: #003366; }
+        #cash-flow-net { font-weight: 500; }
+
+        /* --- Modales --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content p { margin-bottom: 20px; font-size: 1.1rem; }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .modal-buttons button { padding: 10px 20px; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; }
+        #confirm-reset-btn { background-color: #d9534f; color: white; border-color: #d43f3a; }
+        #cancel-reset-btn, #cancel-open-btn, #cancel-save-btn, #cancel-load-version-btn, #cancel-version-change-btn, #cancel-first-save-btn { background-color: #f0f0f0; color: #333; }
+        #confirm-open-btn, #confirm-load-version-btn, #save-as-new-version-btn, #confirm-version-change-btn, #confirm-first-save-btn { background-color: #0056b3; color: white; border-color: #0056b3; }
+        #overwrite-version-btn { background-color: #e0e0e0; color: #333; }
+        #overwrite-version-btn:hover { background-color: #d1d1d1; }
+        .modal-content .form-group { margin-bottom: 20px; text-align: left; }
+        .modal-content .form-group label { display: block; margin-bottom: 5px; }
+        .modal-content .form-group input, .modal-content select { width: 100%; padding: 10px; font-size: 1rem; }
+
+        /* --- Popover --- */
+        .popover { display: none; position: absolute; z-index: 2001; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); width: 350px; border: 1px solid #ddd; }
+
+        /* --- Responsivo Calculadora --- */
+        @media (max-width: 1024px) {
+            .calc-toolbar { flex-wrap: wrap; }
+            .calc-toolbar .header-left { flex-basis: 100%; justify-content: center; margin-bottom: 10px; }
+            .calc-toolbar .header-buttons { width: 100%; justify-content: center; flex-wrap: wrap; }
+            #version-switcher { width: 100%; margin-bottom: 10px; order: -1; }
+            .main-container { grid-template-columns: 1fr; height: auto; }
+            .input-group { grid-template-columns: 1fr; }
+            .yearly-inputs-container { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+        }
+        @media (max-width: 600px) {
+            .calc-toolbar .header-buttons button { flex: 1 1 120px; }
+            .yearly-inputs-container { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; }
+            .main-container { padding: 8px; gap: 16px; }
+            #calculadora-container .card, #dashboardView .card { padding: 12px; gap: 15px; }
+            .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
+            .metric-box { padding: 12px; }
+            .metric-value-container .value { font-size: 1.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Calculadora de Beneficios</h1>
+            <div class="header-right">
+                <div class="total-benefit-container">
+                    <div class="label">Beneficio potencial anual</div>
+                    <div class="benefit-value-row">
+                        <div class="value" id="totalBenefitDisplay">$0.00</div>
+                        <span id="header-currency-badge" class="header-currency-badge">USD</span>
+                    </div>
+                </div>
+                <div class="header-kpi-row">
+                    <div class="header-kpi-item">
+                        <span class="header-kpi-label">ROI</span>
+                        <span class="header-kpi-value" id="header-roi-value">-</span>
+                    </div>
+                    <div class="header-kpi-item">
+                        <span class="header-kpi-label">TIR</span>
+                        <span class="header-kpi-value" id="header-tir-value">-</span>
+                    </div>
+                    <div class="header-kpi-item">
+                        <span class="header-kpi-label">TIRM</span>
+                        <span class="header-kpi-value" id="header-mirr-value">-</span>
+                    </div>
+                    <div class="header-kpi-item">
+                        <span class="header-kpi-label">Payback</span>
+                        <span class="header-kpi-value" id="header-payback-value">-</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="ingresoView">1. Ingreso de información</button>
+            <button class="tab-btn" data-tab="dashboardView">2. Dashboard de resultados</button>
+            <button class="tab-btn" data-tab="calculatorView">3. Palancas de valor</button>
+            <button class="tab-btn" data-tab="dataInputView">4. Cuestionario</button>
+            <button class="tab-btn" data-tab="configView">5. Configuración</button>
+        </nav>
+
+        <main id="ingresoView" class="view active" style="padding: 0;">
+            <!-- Toolbar -->
+            <div class="calc-toolbar">
+                <div class="toolbar-inner">
+                    <div class="header-left">
+                        <h1 class="header-title">Ingreso de información</h1>
+                    </div>
+                    <div class="header-buttons">
+                        <select id="version-switcher" style="display: none;"></select>
+                        <button id="calculate-btn">Calcular</button>
+                        <button id="new-btn">Nuevo</button>
+                        <button id="open-btn">Abrir</button>
+                        <button id="save-btn">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calculadora-container">
+                <div class="main-container">
+                    <!-- Panel Izquierdo -->
+                    <div class="input-panel">
+                        <div class="card">
+                            <h2><span class="material-symbols-outlined section-icon">domain</span>Datos generales <span class="info-icon material-symbols-outlined" data-tooltip="Ingresa los datos básicos del cliente, así como el número de empleados en el alcance">info</span></h2>
+                            <div class="form-section">
+                                <div class="input-group">
+                                    <label for="clientName">Cliente: <span style="color:red">*</span></label>
+                                    <input type="text" id="clientName">
+                                </div>
+                                <div class="input-group">
+                                    <label for="contractYears">Años del contrato: <span style="color:red">*</span></label>
+                                    <input type="number" id="contractYears" min="1" max="20" value="5">
+                                </div>
+                                <div class="input-group">
+                                    <label for="numberOfEmployees">Número de empleados: <span style="color:red">*</span></label>
+                                    <input type="text" id="numberOfEmployees" class="numeric-integer" placeholder="Ej: 1,000">
+                                </div>
+                                <div class="input-group" style="display: none;">
+                                    <label for="annualBenefit">Beneficio anual:</label>
+                                    <input type="text" id="annualBenefit" class="numeric-currency" placeholder="Ej: 50,000.00">
+                                </div>
+                                <div class="input-group">
+                                    <label for="currency">Moneda: <span style="color:red">*</span></label>
+                                    <select id="currency">
+                                        <option value="USD">Dólar Americano (USD)</option>
+                                        <option value="MXN">Peso Mexicano (MXN)</option>
+                                        <option value="EUR">Euro (EUR)</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label for="scenario-selector">Tipo de beneficios: <span style="color:red">*</span> <span class="info-icon material-symbols-outlined" data-tooltip="Selecciona el beneficio de las palancas de valor:<br><br>• <b>Conservador:</b> Coloca el porcentaje de beneficio de todas las palancas en el límite inferior.<br>• <b>Promedio:</b> Coloca el porcentaje de beneficio de todas las palancas en el punto medio del rango.<br>• <b>Probable:</b> Coloca el porcentaje de beneficio de todas las palancas en el punto máximo del rango.">info</span></label>
+                                    <select id="scenario-selector">
+                                        <option value="">-- Seleccionar --</option>
+                                        <option value="conservador">Conservador</option>
+                                        <option value="intermedio">Intermedio</option>
+                                        <option value="probable">Probable</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p id="err-datos-generales" class="section-error">Completa todos los campos obligatorios de datos generales.</p>
+                        </div>
+                        <div class="card" id="modules-card" style="display: none;">
+                            <h2><span class="material-symbols-outlined section-icon">extension</span>Módulos en alcance del proyecto <span style="color:red">*</span></h2>
+                            <table id="modules-benefit-table" style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #e0e0e0;">Módulo</th>
+                                        <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #e0e0e0;">En alcance</th>
+                                        <th style="text-align:right; padding:6px 8px; border-bottom:2px solid #e0e0e0;">Beneficio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardModulesContainer"></tbody>
+                                <tfoot>
+                                    <tr style="font-weight:bold; border-top:2px solid #e0e0e0;">
+                                        <td style="padding:6px 8px;" colspan="2">Total en alcance</td>
+                                        <td id="modules-total-benefit" style="text-align:right; padding:6px 8px; color:#0056b3;">-</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <p id="modules-shared-note" style="display:none; font-size:0.78rem; color:#888; margin-top:8px;">* Palanca compartida: pertenece a múltiples módulos; su beneficio aparece en cada uno de ellos.</p>
+                        </div>
+                    </div>
+                    <!-- Panel Derecho -->
+                    <div class="input-panel">
+                        <div class="card">
+                            <h2><span class="material-symbols-outlined section-icon">payments</span><span id="costs-card-title">Costos por año</span></h2>
+                            <label>Costos de suscripción (en $) <span style="color:red">*</span></label>
+                            <div class="yearly-inputs-container" id="subscription-costs-inputs"></div>
+                            <p id="err-subscription" class="section-error">Ingresa los costos de suscripción para cada año.</p>
+                            <label>Costos de implementación (en $) <span style="color:red">*</span></label>
+                            <div class="yearly-inputs-container" id="implementation-costs-inputs"></div>
+                            <p id="err-implementation" class="section-error">El Año 1 de costos de implementación es obligatorio.</p>
+                        </div>
+                        <div class="card">
+                            <h2><span class="material-symbols-outlined section-icon">moving</span>Curva de adopción (en %) <span class="info-icon material-symbols-outlined" data-tooltip="La curva de adopción depende de la duración del proyecto de implementación. Se sugiere mantener los valores por default">info</span></h2>
+                            <div class="yearly-inputs-container" id="adoption-curve-inputs"></div>
+                            <p id="err-adoption" class="section-error">Ingresa la curva de adopción para cada año.</p>
+                        </div>
+                        <div class="card">
+                            <h2><span class="material-symbols-outlined section-icon">playlist_add</span><span id="other-items-card-title">Otros costos y beneficios por año</span> <span class="info-icon material-symbols-outlined" data-tooltip="En esta sección pueden agregarse otros costos/beneficios como puede ser: cloud extension, costos internos del cliente, etc.">info</span></h2>
+                            <button id="add-other-item-btn"><span class="material-symbols-outlined" style="font-size: 1.2rem;">add</span> Agregar rubro</button>
+                            <div id="other-items-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modales -->
+                <div id="reset-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>¿Seguro que deseas borrar todos los datos?</p>
+                        <div class="modal-buttons">
+                            <button id="cancel-reset-btn">Cancelar</button>
+                            <button id="confirm-reset-btn">Confirmar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="open-confirm-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>Hay datos sin guardar que se perderán. ¿Deseas continuar y abrir un nuevo archivo?</p>
+                        <div class="modal-buttons">
+                            <button id="cancel-open-btn">Cancelar</button>
+                            <button id="confirm-open-btn">Continuar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="save-options-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>¿Cómo deseas guardar los cambios?</p>
+                        <div class="form-group">
+                            <label for="new-version-name">Nombre para nueva versión:</label>
+                            <input type="text" id="new-version-name" placeholder="Ej: Escenario optimista">
+                        </div>
+                        <div class="modal-buttons">
+                            <button id="cancel-save-btn">Cancelar</button>
+                            <button id="overwrite-version-btn">Sobreescribir</button>
+                            <button id="save-as-new-version-btn">Guardar como nueva</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="first-save-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>Ingresa un nombre para esta primera versión:</p>
+                        <div class="form-group">
+                            <label for="first-version-name">Nombre de la versión:</label>
+                            <input type="text" id="first-version-name" placeholder="Ej: Propuesta inicial">
+                        </div>
+                        <div class="modal-buttons">
+                            <button id="cancel-first-save-btn">Cancelar</button>
+                            <button id="confirm-first-save-btn">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="version-change-confirm-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>Se cambiará el escenario y los cambios no guardados se perderán. ¿Deseas continuar?</p>
+                        <div class="modal-buttons">
+                            <button id="cancel-version-change-btn">Cancelar</button>
+                            <button id="confirm-version-change-btn">Continuar</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="open-version-modal" class="modal-overlay">
+                    <div class="modal-content">
+                        <p>El archivo contiene múltiples versiones. Selecciona una para cargar.</p>
+                        <select id="version-selector" class="form-group"></select>
+                        <div class="modal-buttons">
+                            <button id="cancel-load-version-btn">Cancelar</button>
+                            <button id="confirm-load-version-btn">Cargar Versión</button>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="file" id="file-input" accept=".json" style="display: none;">
+            </div>
+        </main>
+
+        <main id="dashboardView" class="view" style="padding: 0;">
+            <div class="calc-toolbar" style="justify-content: flex-end;">
+                <div class="header-buttons">
+                    <button id="export-pptx-btn">Exportar PPTX</button>
+                </div>
+            </div>
+            <div class="output-panel">
+                <div class="card">
+                    <h2><span class="material-symbols-outlined section-icon">bar_chart</span><span id="chart-card-title">Gráfico de beneficios vs. costos</span></h2>
+                    <div id="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2><span class="material-symbols-outlined section-icon">calculate</span><span id="metrics-card-title">Indicadores financieros</span></h2>
+                    <div class="metrics-grid">
+                        <div class="metric-box" id="vpn-metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">attach_money</span>
+                                <span class="metric-title">Valor Presente Neto (VPN)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Mide la ganancia total que generará el proyecto en el futuro, pero trayendo todo ese dinero a su valor de hoy. Si es positivo, el proyecto es rentable.">info</span>
+                                <span class="metric-tag" id="vpn-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="vpn-value">-</div>
+                                <div class="metric-description">Pasa el mouse para analizar el punto de equilibrio.</div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">trending_up</span>
+                                <span class="metric-title">Retorno de Inversión (ROI)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Te dice qué porcentaje de la inversión inicial recuperarás como ganancia. Un ROI del 100% significa que duplicaste tu inversión.">info</span>
+                                <span class="metric-tag" id="roi-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="roi-value">-</div>
+                                <div class="metric-description">Retorno porcentual sobre la inversión.</div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">track_changes</span>
+                                <span class="metric-title">Tasa Interna de Retorno (TIR)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Es la tasa de interés máxima que el proyecto puede soportar para no perder dinero. Si la TIR es mayor que tu tasa de descuento, el proyecto es bueno.">info</span>
+                                <span class="metric-tag" id="tir-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="tir-value">-</div>
+                                <div class="metric-description">Tasa de descuento que hace el VPN cero.</div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">percent</span>
+                                <span class="metric-title">TIR Modificada (TIRM)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Es una versión más realista de la TIR. Asume que las ganancias se reinvierten a una tasa más segura (la tasa de descuento), no a la propia TIR.">info</span>
+                                <span class="metric-tag" id="mirr-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="mirr-value">-</div>
+                                <div class="metric-description">TIR asumiendo reinversión a tasa de descuento.</div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">hourglass</span>
+                                <span class="metric-title">Costo Atraso (3 meses)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Es la cantidad de dinero (beneficio) que dejas de ganar si el inicio del proyecto se retrasa 3 meses. Te ayuda a entender la urgencia.">info</span>
+                                <span class="metric-tag" id="delay-cost-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="delay-cost-value">-</div>
+                                <div class="metric-description">Beneficio perdido por atraso.</div>
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-header">
+                                <span class="material-symbols-outlined metric-icon">savings</span>
+                                <span class="metric-title">Recuperación (años)</span>
+                                <span class="info-icon material-symbols-outlined" data-tooltip="Indica el tiempo exacto (en años) que tardarás en recuperar toda la inversión inicial con las ganancias del proyecto.">info</span>
+                                <span class="metric-tag" id="payback-tag"></span>
+                            </div>
+                            <div class="metric-value-container">
+                                <div class="value" id="payback-value">-</div>
+                                <div class="metric-description">Tiempo para recuperar la inversión.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2><span class="material-symbols-outlined section-icon">account_balance</span><span id="cash-flow-title-text">Flujo de efectivo por año (en miles)</span></h2>
+                    <div class="cash-flow-table-container">
+                        <table id="cash-flow-table">
+                            <thead><tr id="cash-flow-header"></tr></thead>
+                            <tbody>
+                                <tr id="cash-flow-benefits"></tr>
+                                <tr id="cash-flow-subscription"></tr>
+                                <tr id="cash-flow-implementation"></tr>
+                            </tbody>
+                            <tbody id="cash-flow-other-items-container"></tbody>
+                            <tbody>
+                                <tr id="cash-flow-net"></tr>
+                                <tr id="cash-flow-cumulative"></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Popovers -->
+            <div id="npv-analysis-popover" class="popover">
+                <h3 style="color: #003366; margin-bottom: 15px; font-size: 1.1rem;">Análisis de Beneficio para VPN</h3>
+                <div style="text-align: left; width: 100%;">
+                    <label style="font-size: 0.85rem; color: #555;">Beneficio anual requerido para VPN=0:</label>
+                    <p id="required-benefit-value" style="font-size: 1.9rem; font-weight: 700; color: #0056b3; margin: 4px 0 12px 0;">-</p>
+                    <p id="benefit-difference-text" style="font-size: 0.95rem;">-</p>
+                </div>
+            </div>
+        </main>
+
+        <main id="dataInputView" class="view">
+            <h2>Datos de Entrada</h2>
+            <div id="dataInputContainer"></div>
+        </main>
+
+        <main id="calculatorView" class="view">
+            <h2>Resultados por Palanca</h2>
+            <div id="calculatorContainer"></div>
+        </main>
+
+        <main id="configView" class="view">
+            <details class="card">
+                <summary><h2>Gestión de Módulos</h2></summary>
+                <div class="details-content">
+                    <form id="moduleForm" style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <input type="text" id="moduleName" placeholder="Nombre del nuevo módulo" required style="margin-bottom: 0;">
+                        <button type="submit" class="success">Añadir Módulo</button>
+                    </form>
+                    <div id="moduleList"></div>
+                </div>
+            </details>
+
+            <details class="card" open>
+                <summary><h2 id="formTitle">Crear Nueva Palanca de Valor</h2></summary>
+                <div class="details-content">
+                    <form id="configForm">
+                        <input type="hidden" id="leverId">
+                        <div class="form-group">
+                            <label>Módulos del Software</label>
+                            <div id="leverModulesContainer" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                <!-- Checkboxes se generarán aquí -->
+                            </div>
+                        </div>
+                        <div class="form-group"><label for="leverName">Nombre de la Palanca</label><input type="text" id="leverName" placeholder="Ej: Reducir costo de rotación" required></div>
+                        <div class="form-group">
+                            <label for="leverValueDescription">Descripción de la palanca</label>
+                            <textarea id="leverValueDescription" placeholder="Describe brevemente esta palanca de valor..." maxlength="256" oninput="this.nextElementSibling.textContent = `${this.value.length}/256`"></textarea>
+                            <div class="char-counter">0/256</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Datos de Entrada (Preguntas)</label>
+                            <div id="questionsContainer"></div>
+                            <button type="button" id="addQuestionBtn" class="secondary">Añadir Pregunta</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="baseLineFormula">Fórmula y Formato de Línea Base</label>
+                            <div class="formula-group">
+                                <div class="formula-input"><input type="text" id="baseLineFormula" placeholder="Ej: q1 * q2 * q3" required><p class="formula-hint">Si una 'q' es porcentaje, la app lo convierte. No dividas por 100.</p></div>
+                                <div class="format-selector"><select id="baseLineFormat"><option value="currency">Moneda ($)</option><option value="number">Numérico</option></select></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="kpiDescription">Descripción del KPI</label>
+                            <textarea id="kpiDescription" placeholder="Describe el KPI y cómo se calcula..." maxlength="255" oninput="this.nextElementSibling.textContent = `${this.value.length}/255`"></textarea>
+                            <div class="char-counter">0/255</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="kpiFormula">Fórmula y Formato del KPI Actual</label>
+                            <div class="formula-group">
+                                <div class="formula-input"><input type="text" id="kpiFormula" placeholder="Ej: q2" required><p class="formula-hint">Usa los IDs de las preguntas.</p></div>
+                                <div class="format-selector"><select id="kpiFormat"><option value="percentage">Porcentaje (%)</option><option value="number">Numérico</option></select></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Rango del Porcentaje de Beneficio</label>
+                            <div style="display: flex; gap: 15px;"><input type="number" id="benefitMin" placeholder="Mínimo %" value="1" step="any" required><input type="number" id="benefitMax" placeholder="Máximo %" value="20" step="any" required></div>
+                        </div>
+                        <div class="form-group">
+                            <label>El beneficio representa una:</label>
+                            <select id="benefitType"><option value="reduction">Reducción (disminuye costo/kpi)</option><option value="increment">Incremento (aumenta ganancia/kpi)</option></select>
+                        </div>
+                        <button type="submit" id="saveLeverBtn">Guardar Palanca</button>
+                        <button type="button" id="cancelEditBtn" class="secondary" style="display:none;">Cancelar Edición</button>
+                    </form>
+                </div>
+            </details>
+
+            <details class="card" open>
+                <summary><h2>Palancas Existentes</h2></summary>
+                <div class="details-content" id="configList"></div>
+            </details>
+
+            <details class="card" open>
+                <summary><h2>Parámetros de cálculo</h2></summary>
+                <div class="details-content">
+                    <div class="form-group">
+                        <label for="configDiscountRate">Tasa de descuento (%):</label>
+                        <input type="text" id="configDiscountRate" class="numeric-percent" placeholder="Ej: 10.5" style="max-width:200px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Curva de adopción por defecto (en %)</label>
+                        <p style="font-size:0.83rem;color:#666;margin:4px 0 8px 0;">Define los valores que se pre-llenarán en la curva de adopción de la pestaña 1. El valor del último año configurado se repite en años adicionales. El usuario puede sobreescribirlos en la pestaña 1.</p>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                            <label style="font-size:0.85rem;color:#555;white-space:nowrap;">Años a configurar:</label>
+                            <input type="number" id="defaultAdoptionYearsConfig" min="1" max="10" value="3" style="max-width:70px;">
+                            <button type="button" id="updateDefaultAdoptionBtn" class="secondary" style="font-size:0.85rem;padding:6px 10px;">Actualizar</button>
+                        </div>
+                        <div id="default-adoption-config-inputs" class="yearly-inputs-container"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Monedas disponibles:</label>
+                        <div id="currencies-list" style="margin-bottom:10px;"></div>
+                        <details style="margin-top:4px;">
+                            <summary style="cursor:pointer; color:#0056b3; font-weight:500; margin-bottom:8px;">+ Agregar nueva moneda</summary>
+                            <div style="display:grid; grid-template-columns:1fr 2fr 80px 120px auto; gap:8px; margin-top:8px; align-items:end;">
+                                <div><label style="font-size:0.8rem; color:#555;">Código</label><input id="newCurrencyCode" placeholder="GBP" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+                                <div><label style="font-size:0.8rem; color:#555;">Nombre</label><input id="newCurrencyLabel" placeholder="Libra Esterlina (GBP)" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+                                <div><label style="font-size:0.8rem; color:#555;">Símbolo</label><input id="newCurrencySymbol" placeholder="£" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+                                <div><label style="font-size:0.8rem; color:#555;">Locale</label><input id="newCurrencyLocale" placeholder="en-GB" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px;"></div>
+                                <button id="addCurrencyBtn" class="success" type="button" style="white-space:nowrap;">Agregar</button>
+                            </div>
+                        </details>
+                    </div>
+                    <button id="saveConfigParamsBtn" class="success">Guardar parámetros</button>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary><h2>Importar / Exportar Configuración</h2></summary>
+                <div class="details-content">
+                    <p>Guarda tu configuración en un archivo JSON para compartirla o úsala como respaldo.</p>
+                    <div class="io-buttons">
+                        <button id="exportBtn" class="success">Descargar Configuración (JSON)</button>
+                        <button id="importBtn" class="secondary">Cargar Configuración</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                </div>
+            </details>
+
+            <details class="card">
+                <summary><h2>Eliminar almacenamiento local</h2></summary>
+                <div class="details-content">
+                    <p>Esta acción eliminará permanentemente todas las palancas, módulos y datos guardados en tu navegador. Úsalo si quieres empezar desde cero.</p>
+                    <button id="clearStorageBtn" class="danger">Eliminar Todos los Datos</button>
+                </div>
+            </details>
+        </main>
+        <div id="metric-tooltip-popover" class="popover" style="width: 300px; font-size: 0.9rem; line-height: 1.4; pointer-events: none;"></div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const dataInputContainer = document.getElementById('dataInputContainer');
+    const calculatorContainer = document.getElementById('calculatorContainer');
+    const configForm = document.getElementById('configForm');
+    const questionsContainer = document.getElementById('questionsContainer');
+    const addQuestionBtn = document.getElementById('addQuestionBtn');
+    const configList = document.getElementById('configList');
+    const formTitle = document.getElementById('formTitle');
+    const leverIdInput = document.getElementById('leverId');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const totalBenefitDisplay = document.getElementById('totalBenefitDisplay');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    const clearStorageBtn = document.getElementById('clearStorageBtn');
+
+    const moduleForm = document.getElementById('moduleForm');
+    const moduleList = document.getElementById('moduleList');
+
+    const DEFAULT_CONFIG = {
+        levers: [
+            {
+                "id": "1778611540701", "moduleIds": ["1778618957937"],
+                "name": "Mejorar la productividad de los FTEs de RR.HH.",
+                "questions": [
+                    {"id": "q1", "text": "Número de FTEs de RR.HH.", "type": "number"},
+                    {"id": "q2", "text": "Costo promedio anual de un FTE de RR.HH.", "type": "currency"},
+                    {"id": "q3", "text": "Número de empleados", "type": "number"}
+                ],
+                "baseLineFormula": "q1 * q2", "baseLineFormat": "currency",
+                "kpiFormula": "(100*q1)/q3", "kpiFormat": "percentage",
+                "leverDescription": "FTEs de RR.HH. por cada 100 empleados",
+                "benefitMin": 10, "benefitMax": 20, "benefitType": "reduction"
+            },
+            {
+                "id": "1778621586594", "moduleIds": ["1778618968872"],
+                "name": "Reducir el tiempo para ocupar posiciones vacantes",
+                "questions": [
+                    {"id": "q1", "text": "Tiempo para ocupar una posición vacante (en días)", "type": "number"},
+                    {"id": "q2", "text": "Revenue perdido por día laboral", "type": "currency"},
+                    {"id": "q3", "text": "Posiciones difíciles de ocupar", "type": "number"}
+                ],
+                "baseLineFormula": "q1*q2*q3", "baseLineFormat": "currency",
+                "kpiFormula": "q3", "kpiFormat": "number",
+                "leverDescription": "Tiempo para ocupar posiciones vacantes (en días)",
+                "benefitMin": 5, "benefitMax": 10, "benefitType": "reduction"
+            },
+            {
+                "id": "1778717500150",
+                "moduleIds": ["1778618957937","1778618968872","1778715587825","1778715598539","1778715621919","1778715767385","1778715786536","1778715797687"],
+                "name": "Reducir la rotación voluntaria de personal",
+                "questions": [
+                    {"id": "q1", "text": "Tasa de Rotación Voluntaria Anual", "type": "percentage"},
+                    {"id": "q2", "text": "Número de Empleados", "type": "number"},
+                    {"id": "q3", "text": "Costo promedio de contratación de un colaborador", "type": "currency"}
+                ],
+                "baseLineFormula": "q1 * q2 * q3", "baseLineFormat": "currency",
+                "kpiFormula": "q1", "kpiFormat": "percentage",
+                "leverDescription": "Tasa de Rotación Voluntaria Anual",
+                "benefitMin": 1, "benefitMax": 3, "benefitType": "reduction"
+            }
+        ],
+        modules: [
+            {"id": "1778618957937", "name": "SAP SFSF Employee Central"},
+            {"id": "1778618968872", "name": "SAP SFSF Recruiting"},
+            {"id": "1778715587825", "name": "SAP SFSF Onboarding"},
+            {"id": "1778715598539", "name": "SAP SFSF Employee Central Payroll"},
+            {"id": "1778715621919", "name": "SAP SFSF Performance & Goals"},
+            {"id": "1778715767385", "name": "SAP SFSF Compensation"},
+            {"id": "1778715786536", "name": "SAP SFSF Learning"},
+            {"id": "1778715797687", "name": "SAP SFSF Career & Talent Development"}
+        ]
+    };
+
+    let levers = JSON.parse(localStorage.getItem('valueLevers')) || DEFAULT_CONFIG.levers;
+    let modules = JSON.parse(localStorage.getItem('softwareModules')) || DEFAULT_CONFIG.modules;
+    if (!localStorage.getItem('valueLevers')) {
+        localStorage.setItem('valueLevers', JSON.stringify(levers));
+        localStorage.setItem('softwareModules', JSON.stringify(modules));
+    }
+    let selectedDashboardModuleIds = null;
+    let questionCount = 0;
+
+    // --- FUNCIONES DE UTILIDAD Y FORMATO ---
+    const formatCurrency = (value) => {
+        const currEl = document.getElementById('currency');
+        const currency = currEl ? currEl.value : 'MXN';
+        let locale = { USD: 'en-US', MXN: 'es-MX', EUR: 'de-DE' }[currency] || 'es-MX';
+        try {
+            const stored = JSON.parse(localStorage.getItem('configCurrenciesFull') || '[]');
+            const found = stored.find(c => c.value === currency);
+            if (found?.locale) locale = found.locale;
+        } catch(e) {}
+        const fmt = new Intl.NumberFormat(locale, { style: 'currency', currency });
+        return isNaN(value) ? fmt.format(0) : fmt.format(value);
+    };
+    const formatPercentage = (value) => isNaN(value) ? "0.00%" : `${(value * 100).toFixed(2)}%`;
+    const formatNumber = (value) => isNaN(value) ? "0.00" : value.toFixed(2);
+
+    const formatValue = (value, formatType) => {
+        switch (formatType) {
+            case 'currency': return formatCurrency(value);
+            case 'percentage': return formatPercentage(value);
+            case 'number': return formatNumber(value);
+            default: return value;
+        }
+    };
+
+    // --- LÓGICA DE NAVEGACIÓN POR PESTAÑAS ---
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const views = document.querySelectorAll('.view');
+    const switchTab = (targetTab) => {
+        views.forEach(view => view.classList.remove('active'));
+        const targetView = document.getElementById(targetTab);
+        targetView?.classList.add('active');
+        tabButtons.forEach(button => {
+            button.classList.remove('active');
+            if (button.dataset.tab === targetTab) button.classList.add('active');
+        });
+        if (targetTab === 'configView') {
+            targetView.querySelectorAll('details.card').forEach(detail => detail.open = false);
+        }
+    };
+    tabButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
+
+    // --- RENDERIZADO DE VISTAS ---
+    const renderAllTabs = () => {
+        renderDataInputTab();
+        renderCalculatorTab();
+        renderConfigList();
+        renderModulesConfig();
+        app.calculateAllLevers();
+    };
+
+    const renderDataInputTab = () => {
+        // Capturar valores antes de limpiar
+        const savedValues = {};
+        dataInputContainer.querySelectorAll('input[data-gindex]').forEach(input => {
+            savedValues[input.id] = input.value;
+        });
+
+        dataInputContainer.innerHTML = levers.length === 0
+            ? '<p>No hay palancas configuradas. Ve a la pestaña "5. Configuración" para crear una.</p>'
+            : '';
+
+        const { globalQuestions } = buildGlobalQuestions(levers);
+
+        // Asignar cada pregunta global a su sección
+        const sections = {}; // sectionId → { name, questions[] }
+
+        globalQuestions.forEach(gq => {
+            let sectionId, sectionName;
+
+            if (gq.refs.length > 1) {
+                sectionId = 'general';
+                sectionName = 'General';
+            } else {
+                const lever = levers.find(l => l.id === gq.refs[0].leverId);
+                const mIds = lever
+                    ? (lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []))
+                    : [];
+                const validMIds = mIds.filter(id => modules.some(m => m.id === id));
+
+                if (validMIds.length === 1) {
+                    const mod = modules.find(m => m.id === validMIds[0]);
+                    sectionId = validMIds[0];
+                    sectionName = mod ? mod.name : 'General';
+                } else {
+                    sectionId = 'general';
+                    sectionName = 'General';
+                }
+            }
+
+            if (!sections[sectionId]) sections[sectionId] = { name: sectionName, questions: [] };
+            sections[sectionId].questions.push(gq);
+        });
+
+        // Renderizar: General primero, luego módulos en orden de creación
+        const seen = new Set();
+        const orderedSectionIds = ['general', ...modules.map(m => m.id)]
+            .filter(id => sections[id] && !seen.has(id) && seen.add(id));
+
+        orderedSectionIds.forEach(sectionId => {
+            const { name, questions } = sections[sectionId];
+            const card = document.createElement('div');
+            card.className = 'card';
+            const title = document.createElement('h3');
+            title.textContent = name;
+            card.appendChild(title);
+
+            questions.forEach(gq => {
+                const typeMap = { currency: 'Moneda', percentage: 'Porcentaje', number: 'Numérico' };
+                const row = document.createElement('div');
+                row.className = 'data-input-row';
+                row.innerHTML = `
+                    <label for="input-gq-${gq.gIndex}">${gq.text}</label>
+                    <input type="text" inputmode="decimal"
+                        id="input-gq-${gq.gIndex}"
+                        data-gindex="${gq.gIndex}"
+                        data-type="${gq.type}"
+                        placeholder="Ingresa un valor..."
+                        oninput="app.calculateAllLevers()"
+                        onfocus="app.unformatInput(event)"
+                        onblur="app.formatInput(event)">
+                    <span class="data-type-tag">${typeMap[gq.type] || 'Numérico'}</span>
+                `;
+                card.appendChild(row);
+            });
+
+            dataInputContainer.appendChild(card);
+        });
+
+        // Restaurar valores: sesión actual tiene prioridad; localStorage como fallback para carga inicial
+        const storedValues = JSON.parse(localStorage.getItem('leverInputValues') || '{}');
+        dataInputContainer.querySelectorAll('input[data-gindex]').forEach(input => {
+            const gIndex = input.dataset.gindex;
+            if (savedValues[input.id]) input.value = savedValues[input.id];
+            else if (storedValues[gIndex]) input.value = storedValues[gIndex];
+        });
+    };
+
+    const GLOBAL_DATA_FIELDS = ['número de empleados'];
+
+    const MODULE_COLORS = ['#0056b3','#28a745','#fd7e14','#6f42c1','#dc3545','#20c997','#e83e8c','#17a2b8','#e67e22','#6c757d'];
+    const getModuleColor = (moduleId) => {
+        const idx = modules.findIndex(m => m.id === moduleId);
+        return MODULE_COLORS[idx >= 0 ? idx % MODULE_COLORS.length : 0];
+    };
+
+    const buildGlobalQuestions = (levers) => {
+        const globalQuestions = [];
+        const lookup = {};
+        const seen = {};
+        levers.forEach(lever => {
+            lever.questions.forEach(q => {
+                if (GLOBAL_DATA_FIELDS.includes(q.text.trim().toLowerCase())) return;
+                const key = q.text.trim().toLowerCase() + '|' + q.type;
+                const lookupKey = lever.id + '|' + q.id;
+                if (seen[key] !== undefined) {
+                    globalQuestions[seen[key]].refs.push({ leverId: lever.id, questionId: q.id });
+                    lookup[lookupKey] = seen[key];
+                } else {
+                    const gIndex = globalQuestions.length;
+                    seen[key] = gIndex;
+                    globalQuestions.push({ gIndex, text: q.text, type: q.type, refs: [{ leverId: lever.id, questionId: q.id }] });
+                    lookup[lookupKey] = gIndex;
+                }
+            });
+        });
+        return { globalQuestions, lookup };
+    };
+
+    const renderCalculatorTab = () => {
+        calculatorContainer.innerHTML = levers.length === 0 ? '<p>No hay palancas configuradas. Ve a la pestaña de "Configuración" para crear una.</p>' : '';
+        levers.forEach(lever => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.leverId = lever.id;
+
+            // Reemplazar q-vars con nombres de preguntas para mostrar en detalles
+            let readableBaseFormula = lever.baseLineFormula;
+            let readableKpiFormula = lever.kpiFormula;
+            lever.questions.forEach(q => {
+                const re = new RegExp(`\\b${q.id}\\b`, 'g');
+                readableBaseFormula = readableBaseFormula.replace(re, `[${q.text}]`);
+                readableKpiFormula = readableKpiFormula.replace(re, `[${q.text}]`);
+            });
+
+            const leverMIds = lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []);
+            const visibleMIds = (selectedDashboardModuleIds && selectedDashboardModuleIds.length > 0)
+                ? leverMIds.filter(id => selectedDashboardModuleIds.includes(id))
+                : leverMIds;
+            const initialModuleTagsHtml = visibleMIds.map(id => {
+                const m = modules.find(mod => mod.id === id);
+                return m ? `<span class="module-tag" style="background-color:${getModuleColor(id)};">${m.name}</span>` : '';
+            }).join(' ');
+
+            card.innerHTML = `
+                <div class="calc-card-header">
+                    <div>
+                        <h2>${lever.name}</h2>
+                        ${lever.leverValueDescription ? `<p class="lever-description-display">${lever.leverValueDescription}</p>` : ''}
+                    </div>
+                    <div class="benefit-display">
+                        <div class="label">Beneficio Obtenido</div>
+                        <div class="value" data-result="benefit">$0.00</div>
+                    </div>
+                </div>
+
+                <div class="calc-results-grid" id="results-${lever.id}">
+                    <div class="result-item"><div class="label">Línea base actual</div><div class="value" data-result="baseLineCurrent">$0.00</div></div>
+                    <div class="result-item"><div class="label">KPI actual</div><div class="value" data-result="kpiCurrent">0.00%</div></div>
+                    <div class="result-item"><div class="label">Línea base mejorada</div><div class="value" data-result="baseLineImproved">$0.00</div></div>
+                    <div class="result-item"><div class="label">KPI mejorado</div><div class="value" data-result="kpiImproved">0.00%</div></div>
+                    <div class="controls-column">
+                        <div class="calc-slider-container" style="flex-direction: column; align-items: stretch; gap: 5px; width: 100%;">
+                            <input type="range" id="benefit-${lever.id}" min="${lever.benefitMin}" max="${lever.benefitMax}" value="${lever.benefitMin}" step="0.1" oninput="app.calculateAllLevers()" style="width: 100%; margin: 0;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #666;"><span>${lever.benefitMin}%</span><span id="benefit-value-${lever.id}" style="color: var(--primary-color); font-weight: bold;">${lever.benefitMin}%</span><span>${lever.benefitMax}%</span></div>
+                        </div>
+                    </div>
+                    ${lever.leverDescription ? `<div class="kpi-description-display">${lever.leverDescription}</div>` : ''}
+                    <div class="lever-module-tags-container" id="lever-tags-${lever.id}">${initialModuleTagsHtml}</div>
+                    <details class="details-row"><summary>Mostrar detalles</summary><div class="details-content" id="details-${lever.id}"><p><strong>Fórmula Línea Base:</strong> <code>${readableBaseFormula}</code></p><p><strong>Fórmula KPI:</strong> <code>${readableKpiFormula}</code></p></div></details>
+                </div>
+                `;
+            calculatorContainer.appendChild(card);
+        });
+    };
+
+    // --- LÓGICA DE CÁLCULO GLOBAL ---
+    window.app = {
+        calculateAllLevers: () => {
+            let totalBenefit = 0;
+            const moduleBenefitMap = {};
+            let hasSharedLevers = false;
+            const { lookup } = buildGlobalQuestions(levers);
+            levers.forEach(lever => {
+                const scope = {};
+                let allInputsValid = true;
+                const _empVal = document.getElementById('numberOfEmployees')?.value || '';
+                scope.totalEmpleados = parseFloat(_empVal.replace(/[$,€\s]/g, '')) || 0;
+                lever.questions.forEach(q => {
+                    if (GLOBAL_DATA_FIELDS.includes(q.text.trim().toLowerCase())) {
+                        scope[q.id] = scope.totalEmpleados;
+                        return;
+                    }
+                    const gIndex = lookup[lever.id + '|' + q.id];
+                    const input = document.getElementById(`input-gq-${gIndex}`);
+                    if (!input) { allInputsValid = false; return; }
+                    const cleanValue = input.value.replace(/[$,%\s]/g, '');
+                    let value = parseFloat(cleanValue);
+
+                    if (isNaN(value)) {
+                        allInputsValid = false;
+                    }
+
+                    if (q.type === 'percentage') {
+                        scope[q.id] = value / 100;
+                    } else {
+                        scope[q.id] = value;
+                    }
+                });
+
+                const resultsContainer = document.getElementById(`results-${lever.id}`);
+                const leverCard = document.querySelector(`#calculatorView .card[data-lever-id="${lever.id}"]`);
+                if (!leverCard || !resultsContainer) return;
+
+                if (!allInputsValid) {
+                    resultsContainer.querySelectorAll('[data-result]').forEach(el => el.textContent = formatValue(0, el.dataset.result.includes('kpi') ? lever.kpiFormat : lever.baseLineFormat));
+                    document.querySelector(`#calculatorView [data-lever-id="${lever.id}"] [data-result="benefit"]`).textContent = formatValue(0, lever.baseLineFormat);
+                    return;
+                }
+
+                try {
+                    const baseLineCurrent = math.evaluate(lever.baseLineFormula, scope);
+                    const kpiCurrent = math.evaluate(lever.kpiFormula, scope);
+                    const benefitSlider = document.getElementById(`benefit-${lever.id}`);
+                    leverCard.querySelector(`#benefit-value-${lever.id}`).textContent = `${parseFloat(benefitSlider.value).toFixed(1)}%`;
+                    const benefitPercentage = parseFloat(benefitSlider.value) / 100; // El valor del slider ya es un porcentaje directo
+                    
+                    const kpiImproved = (lever.benefitType === 'reduction') ? kpiCurrent * (1 - benefitPercentage) : kpiCurrent * (1 + benefitPercentage);
+
+                    let baseLineImproved;
+                    const kpiQuestion = lever.questions.find(q => lever.kpiFormula.trim() === q.id);
+                    
+                    if (kpiQuestion) {
+                        // Si el KPI es un solo input, lo reemplazamos y re-evaluamos la línea base.
+                        const improvedScope = { ...scope };
+                        improvedScope[kpiQuestion.id] = kpiImproved;
+                        baseLineImproved = math.evaluate(lever.baseLineFormula, improvedScope);
+                    } else {
+                        // Si el KPI es una fórmula compleja, asumimos que la línea base mejora en la misma proporción.
+                        baseLineImproved = (lever.benefitType === 'reduction') ? baseLineCurrent * (1 - benefitPercentage) : baseLineCurrent * (1 + benefitPercentage);
+                    }
+
+                    const benefit = Math.abs(baseLineImproved - baseLineCurrent);
+                    
+                    let includeInTotal = false;
+                    const mIds = lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []);
+                    if (modules.length === 0) {
+                        includeInTotal = true;
+                    } else if (mIds.length === 0) {
+                        includeInTotal = false;
+                    } else {
+                        includeInTotal = mIds.some(id => selectedDashboardModuleIds && selectedDashboardModuleIds.includes(id));
+                    }
+
+                    if (includeInTotal) {
+                        totalBenefit += isNaN(benefit) ? 0 : benefit;
+                    }
+
+                    // Actualizar etiquetas de módulos visibles en Tab 3
+                    const tagsEl = document.getElementById(`lever-tags-${lever.id}`);
+                    if (tagsEl) {
+                        const visibleIds = (selectedDashboardModuleIds && selectedDashboardModuleIds.length > 0)
+                            ? mIds.filter(id => selectedDashboardModuleIds.includes(id))
+                            : mIds;
+                        tagsEl.innerHTML = visibleIds.map(id => {
+                            const m = modules.find(mod => mod.id === id);
+                            return m ? `<span class="module-tag" style="background-color:${getModuleColor(id)};">${m.name}</span>` : '';
+                        }).join(' ');
+                    }
+
+                    // Acumular beneficio por módulo para la tabla de módulos
+                    const isShared = mIds.length > 1;
+                    if (isShared) hasSharedLevers = true;
+                    mIds.forEach(mid => {
+                        if (!moduleBenefitMap[mid]) moduleBenefitMap[mid] = { total: 0, hasShared: false };
+                        moduleBenefitMap[mid].total += isNaN(benefit) ? 0 : benefit;
+                        if (isShared) moduleBenefitMap[mid].hasShared = true;
+                    });
+
+                    // Actualizar los valores en la nueva interfaz rediseñada
+                    resultsContainer.querySelector('[data-result="baseLineCurrent"]').textContent = formatValue(baseLineCurrent, lever.baseLineFormat);
+                    resultsContainer.querySelector('[data-result="kpiCurrent"]').textContent = formatValue(kpiCurrent, lever.kpiFormat);
+                    resultsContainer.querySelector('[data-result="baseLineImproved"]').textContent = formatValue(baseLineImproved, lever.baseLineFormat);
+                    resultsContainer.querySelector('[data-result="kpiImproved"]').textContent = formatValue(kpiImproved, lever.kpiFormat);
+                    leverCard.querySelector('.calc-card-header [data-result="benefit"]').textContent = formatValue(benefit, lever.baseLineFormat);
+
+                    // Actualizar sección "Mostrar detalles" con fórmulas + datos usados
+                    const detailsEl = document.getElementById(`details-${lever.id}`);
+                    if (detailsEl) {
+                        let readableBase = lever.baseLineFormula;
+                        let readableKpi = lever.kpiFormula;
+                        lever.questions.forEach(q => {
+                            const re = new RegExp(`\\b${q.id}\\b`, 'g');
+                            readableBase = readableBase.replace(re, `[${q.text}]`);
+                            readableKpi = readableKpi.replace(re, `[${q.text}]`);
+                        });
+                        const inputRows = lever.questions.map(q => {
+                            let displayVal = '-';
+                            if (GLOBAL_DATA_FIELDS.includes(q.text.trim().toLowerCase())) {
+                                displayVal = document.getElementById('numberOfEmployees')?.value || '-';
+                            } else {
+                                const gIdx = lookup[lever.id + '|' + q.id];
+                                const inp = document.getElementById(`input-gq-${gIdx}`);
+                                displayVal = inp ? (inp.value || '-') : '-';
+                            }
+                            return `<tr><td style="color:#555;padding:2px 12px 2px 0;">${q.text}</td><td style="font-weight:600;">${displayVal}</td></tr>`;
+                        }).join('');
+                        detailsEl.innerHTML = `
+                            <p><strong>Fórmula Línea Base:</strong> <code>${readableBase}</code></p>
+                            <p><strong>Fórmula KPI:</strong> <code>${readableKpi}</code></p>
+                            <p style="margin-top:10px;"><strong>Datos utilizados en el cálculo:</strong></p>
+                            <table style="font-size:0.88em;border-collapse:collapse;">${inputRows}</table>`;
+                    }
+
+                } catch (error) {
+                    console.error("Error al calcular:", error);
+                    leverCard.querySelector('.details-content').innerHTML = `<p style="color:red;">Error en la fórmula. Revise la configuración.</p>`;
+                }
+            });
+            const currentInputValues = {};
+            document.querySelectorAll('#dataInputContainer input[data-gindex]').forEach(input => {
+                if (input.value.trim()) currentInputValues[input.dataset.gindex] = input.value;
+            });
+            localStorage.setItem('leverInputValues', JSON.stringify(currentInputValues));
+            totalBenefitDisplay.textContent = formatCurrency(totalBenefit);
+
+            // Actualizar el Dashboard directamente (sin iframe)
+            if (typeof window.app.updateDashboardBenefit === 'function') {
+                window.app.updateDashboardBenefit(totalBenefit);
+            }
+            // Actualizar la tabla de módulos
+            if (typeof window.app.updateModuleBenefits === 'function') {
+                window.app.updateModuleBenefits(moduleBenefitMap, hasSharedLevers);
+            }
+        },
+    };
+
+    // --- LÓGICA DE CONFIGURACIÓN ---
+    const renderConfigList = () => {
+        configList.innerHTML = levers.length === 0 ? '<p>No hay palancas creadas.</p>' : '';
+        const { globalQuestions, lookup } = buildGlobalQuestions(levers);
+        levers.forEach((lever, index) => {
+            const mIds = lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []);
+            const validMIds = mIds.filter(id => modules.some(mod => mod.id === id));
+            const isOrphan = validMIds.length === 0;
+            const moduleTags = mIds.map(id => {
+                const m = modules.find(mod => mod.id === id);
+                return m ? `<span class="module-tag" style="background-color:${getModuleColor(id)};">${m.name}</span>` : '';
+            }).join(' ');
+            const orphanWarning = isOrphan ? `<span class="module-tag" style="background-color: #dc3545;">⚠️ Sin módulo asignado</span>` : '';
+
+            const questionsList = lever.questions.map(q => {
+                const gIndex = lookup[lever.id + '|' + q.id];
+                const isShared = globalQuestions[gIndex] && globalQuestions[gIndex].refs.length > 1;
+                const sharedBadge = isShared ? ' <span style="font-size:0.75em;background:#0d6efd;color:#fff;border-radius:4px;padding:1px 6px;vertical-align:middle;">Compartida</span>' : '';
+                return `<li style="font-size:0.85em;color:#555;">${q.text}${sharedBadge}</li>`;
+            }).join('');
+
+            const div = document.createElement('div');
+            div.className = 'config-list-item';
+            if (isOrphan) div.style.borderLeft = '4px solid #dc3545';
+            div.innerHTML = `
+                <div>
+                    <span><strong>${lever.name}</strong> ${moduleTags}${orphanWarning}</span>
+                    ${questionsList ? `<ul style="margin:6px 0 0 16px;padding:0;list-style:disc;">${questionsList}</ul>` : ''}
+                </div>
+                <div style="flex-shrink:0;"><button class="secondary" onclick="app.editLever(${index})">Editar</button><button class="danger" onclick="app.deleteLever(${index})">Eliminar</button></div>`;
+            configList.appendChild(div);
+        });
+    };
+
+    const addQuestionField = (text = '', type = '') => {
+        questionCount++;
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.innerHTML = `
+            <input type="text" value="q${questionCount}" class="question-id" readonly>
+            <input type="text" value="${text}" class="question-text" placeholder="Texto de la pregunta" required>
+            <select class="question-type" required>
+                <option value="" disabled ${!type ? 'selected' : ''}>-- Seleccione tipo --</option>
+                <option value="number" ${type === 'number' ? 'selected' : ''}>Numérico</option>
+                <option value="currency" ${type === 'currency' ? 'selected' : ''}>Moneda ($)</option>
+                <option value="percentage" ${type === 'percentage' ? 'selected' : ''}>Porcentaje (%)</option>
+            </select>
+            <button type="button" class="danger" onclick="this.parentElement.remove()">X</button>`;
+        questionsContainer.appendChild(div);
+    };
+
+    const resetConfigForm = () => {
+        configForm.reset();
+        leverIdInput.value = '';
+        questionsContainer.innerHTML = '';
+        questionCount = 0;
+        formTitle.textContent = 'Crear Nueva Palanca de Valor';
+        document.getElementById('leverValueDescription').value = '';
+        document.getElementById('kpiDescription').value = '';
+        document.querySelectorAll('.char-counter').forEach((el, i) => {
+            el.textContent = i === 0 ? '0/256' : '0/255';
+        });
+        document.querySelectorAll('.module-checkbox').forEach(cb => cb.checked = false);
+        cancelEditBtn.style.display = 'none';
+        addQuestionField();
+    };
+
+    const saveLever = (e) => {
+        e.preventDefault();
+        const moduleCheckboxes = document.querySelectorAll('.module-checkbox:checked');
+        const moduleIds = Array.from(moduleCheckboxes).map(cb => cb.value);
+        if (moduleIds.length === 0) {
+            alert("Por favor, seleccione al menos un módulo.");
+            return;
+        }
+        
+        const questions = Array.from(questionsContainer.querySelectorAll('.question-item')).map(item => ({
+            id: item.querySelector('.question-id').value,
+            text: item.querySelector('.question-text').value,
+            type: item.querySelector('.question-type').value
+        }));
+        const leverData = {
+            id: leverIdInput.value || Date.now().toString(),
+            moduleIds: moduleIds,
+            name: document.getElementById('leverName').value,
+            leverValueDescription: document.getElementById('leverValueDescription').value,
+            questions,
+            baseLineFormula: document.getElementById('baseLineFormula').value,
+            baseLineFormat: document.getElementById('baseLineFormat').value,
+            kpiFormula: document.getElementById('kpiFormula').value,
+            kpiFormat: document.getElementById('kpiFormat').value,
+            leverDescription: document.getElementById('kpiDescription').value,
+            benefitMin: parseFloat(document.getElementById('benefitMin').value),
+            benefitMax: parseFloat(document.getElementById('benefitMax').value),
+            benefitType: document.getElementById('benefitType').value
+        };
+        const existingIndex = levers.findIndex(l => l.id == leverIdInput.value);
+        if (existingIndex > -1) levers[existingIndex] = leverData;
+        else levers.push(leverData);
+        
+        localStorage.setItem('valueLevers', JSON.stringify(levers));
+        resetConfigForm();
+        document.querySelector('#configForm').closest('details').open = false;
+        renderAllTabs();
+    };
+
+    Object.assign(window.app, {
+        deleteLever: (index) => {
+            if (confirm(`¿Seguro que quieres eliminar la palanca "${levers[index].name}"?`)) {
+                levers.splice(index, 1);
+                localStorage.setItem('valueLevers', JSON.stringify(levers));
+                renderAllTabs();
+            }
+        },
+        editLever: (index) => {
+            const lever = levers[index];
+            formTitle.textContent = 'Editando Palanca de Valor';
+            leverIdInput.value = lever.id; // <-- ESTA LÍNEA FALTABA
+
+            
+            const mIds = lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []);
+            document.querySelectorAll('.module-checkbox').forEach(cb => {
+                cb.checked = mIds.includes(cb.value);
+            });
+            
+            document.getElementById('leverName').value = lever.name;
+            const leverValueDescInput = document.getElementById('leverValueDescription');
+            leverValueDescInput.value = lever.leverValueDescription || '';
+            leverValueDescInput.nextElementSibling.textContent = `${leverValueDescInput.value.length}/256`;
+            document.getElementById('baseLineFormula').value = lever.baseLineFormula;
+            document.getElementById('baseLineFormat').value = lever.baseLineFormat || 'currency';
+            document.getElementById('kpiFormula').value = lever.kpiFormula;
+            document.getElementById('kpiFormat').value = lever.kpiFormat || 'percentage';
+            const kpiDescInput = document.getElementById('kpiDescription');
+            kpiDescInput.value = lever.leverDescription || '';
+            kpiDescInput.nextElementSibling.textContent = `${kpiDescInput.value.length}/255`;
+            document.getElementById('benefitMin').value = lever.benefitMin;
+            document.getElementById('benefitMax').value = lever.benefitMax;
+            document.getElementById('benefitType').value = lever.benefitType;
+
+            questionsContainer.innerHTML = '';
+            questionCount = 0;
+            lever.questions.forEach(q => addQuestionField(q.text, q.type || ''));
+
+            cancelEditBtn.style.display = 'inline-block';
+            switchTab('configView');
+            document.querySelector('#configForm').closest('details').open = true;
+            window.scrollTo(0, 0);
+        }
+    });
+
+    // --- LÓGICA DE FORMATEO DE INPUTS ---
+    Object.assign(window.app, {
+        formatInput: (event) => {
+            const input = event.target;
+            let type = input.dataset.type;
+            if (!type) {
+                const lever = levers.find(l => l.id === input.dataset.leverId);
+                const question = lever?.questions.find(q => q.id === input.dataset.questionId);
+                type = question?.type;
+            }
+            if (!type) return;
+
+            let value = parseFloat(input.value);
+            if (isNaN(value)) { input.value = ''; return; }
+
+            if (type === 'currency') input.value = formatCurrency(value);
+            else if (type === 'percentage') input.value = value.toFixed(2) + ' %';
+            else input.value = new Intl.NumberFormat('es-MX').format(value);
+        },
+        unformatInput: (event) => {
+            const input = event.target;
+            const value = input.value;
+            // Elimina todo excepto números, punto decimal y signo negativo
+            const cleanValue = value.replace(/[$,%\s]/g, '');
+            if (!isNaN(parseFloat(cleanValue))) input.value = cleanValue;
+            else input.value = '';
+        }
+    });
+
+    // --- LÓGICA DE MÓDULOS ---
+    const saveModules = () => localStorage.setItem('softwareModules', JSON.stringify(modules));
+
+    const renderModulesConfig = () => {
+        // Renderizar lista de módulos con edición inline
+        moduleList.innerHTML = modules.length === 0 ? '<p>No hay módulos creados.</p>' : '';
+        modules.forEach((module, index) => {
+            const div = document.createElement('div');
+            div.className = 'config-list-item';
+            div.innerHTML = `<input type="text" class="module-name-edit" value="${module.name}" data-index="${index}" style="flex:1; padding:6px 8px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem;"><button class="secondary module-save-btn" data-index="${index}" style="white-space:nowrap;">Guardar</button><button class="danger" onclick="app.deleteModule(${index})">Eliminar</button>`;
+            moduleList.appendChild(div);
+        });
+
+        // Poblar checkboxes en el formulario de palancas
+        const container = document.getElementById('leverModulesContainer');
+        if (container) {
+            const selectedIds = Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+            container.innerHTML = modules.length === 0 ? '<p style="color:#777; font-size:0.9em; margin:0;">Crea al menos un módulo primero.</p>' : '';
+            modules.forEach(module => {
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '5px';
+                label.style.fontWeight = 'normal';
+                label.style.margin = '0';
+                
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = module.id;
+                cb.className = 'module-checkbox';
+                cb.style.margin = '0';
+                cb.style.width = 'auto';
+                if (selectedIds.includes(module.id)) cb.checked = true;
+
+                const colorDot = document.createElement('span');
+                colorDot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${getModuleColor(module.id)};flex-shrink:0;`;
+
+                label.appendChild(cb);
+                label.appendChild(colorDot);
+                label.appendChild(document.createTextNode(module.name));
+                container.appendChild(label);
+            });
+        }
+
+        // Gestión de módulos seleccionados
+        if (selectedDashboardModuleIds === null) {
+            selectedDashboardModuleIds = [];
+        } else {
+            selectedDashboardModuleIds = selectedDashboardModuleIds.filter(id => modules.some(m => m.id === id));
+        }
+
+        // Actualizar el Dashboard directamente (sin iframe)
+        if (typeof window.app.renderDashboardModules === 'function') {
+            window.app.renderDashboardModules(modules, selectedDashboardModuleIds);
+        }
+    };
+
+    moduleList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('module-save-btn')) {
+            const idx = parseInt(e.target.dataset.index);
+            const input = moduleList.querySelector(`.module-name-edit[data-index="${idx}"]`);
+            const newName = input ? input.value.trim() : '';
+            if (!newName) { alert('El nombre no puede estar vacío.'); return; }
+            modules[idx].name = newName;
+            saveModules();
+            renderModulesConfig();
+        }
+    });
+
+    // Métodos de comunicación directa con el Dashboard (reemplazan postMessage)
+    Object.assign(window.app, {
+        onDashboardModulesChanged: (selectedIds) => {
+            selectedDashboardModuleIds = selectedIds;
+            app.calculateAllLevers();
+        },
+        syncDashboard: () => {
+            if (typeof window.app.renderDashboardModules === 'function') {
+                window.app.renderDashboardModules(modules, selectedDashboardModuleIds);
+            }
+            app.calculateAllLevers();
+        },
+        resetModuleSelections: () => {
+            selectedDashboardModuleIds = null;
+            if (typeof window.app.renderDashboardModules === 'function') {
+                window.app.renderDashboardModules(modules, []);
+            }
+            app.calculateAllLevers();
+        }
+    });
+
+    Object.assign(window.app, {
+        addModule: (e) => {
+            e.preventDefault();
+            const moduleNameInput = document.getElementById('moduleName');
+            const name = moduleNameInput.value.trim();
+            if (name) {
+                modules.push({ id: Date.now().toString(), name });
+                localStorage.setItem('softwareModules', JSON.stringify(modules));
+                renderModulesConfig();
+                moduleNameInput.value = '';
+            }
+        },
+        deleteModule: (index) => {
+            if (confirm(`¿Seguro que quieres eliminar el módulo "${modules[index].name}"? Esto no se puede deshacer.`)) {
+                const moduleIdToDelete = modules[index].id;
+                modules.splice(index, 1);
+                // Desvincular palancas que usaban este módulo
+                levers.forEach(lever => {
+                    if (lever.moduleIds) {
+                        lever.moduleIds = lever.moduleIds.filter(id => id !== moduleIdToDelete);
+                    } else if (lever.moduleId === moduleIdToDelete) {
+                        lever.moduleId = '';
+                    }
+                });
+                localStorage.setItem('softwareModules', JSON.stringify(modules));
+                localStorage.setItem('valueLevers', JSON.stringify(levers));
+                renderAllTabs();
+            }
+        }
+    });
+
+    // --- LÓGICA DE IMPORTAR / EXPORTAR ---
+    exportBtn.addEventListener('click', () => {
+        if (levers.length === 0 && modules.length === 0) { alert("No hay configuración para exportar."); return; }
+        const inputValues = {};
+        document.querySelectorAll('#dataInputContainer input[data-gindex]').forEach(input => {
+            if (input.value.trim()) inputValues[input.dataset.gindex] = input.value;
+        });
+        const exportData = {
+            levers: levers,
+            modules: modules,
+            inputValues: inputValues
+        };
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'configuracion_palancas.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+    importBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                // Validar que el JSON tiene la estructura esperada (levers y/o modules)
+                if (!importedData || (!Array.isArray(importedData.levers) && !Array.isArray(importedData.modules))) {
+                     throw new Error("Formato de JSON inválido. Se esperaba un objeto con 'levers' y/o 'modules'.");
+                }
+                
+                // Validación estructural básica para palancas
+                const safeLevers = (importedData.levers || []).map(l => ({
+                    ...l,
+                    questions: Array.isArray(l.questions) ? l.questions : [],
+                    baseLineFormula: l.baseLineFormula || '0',
+                    kpiFormula: l.kpiFormula || '0'
+                }));
+
+                if (confirm("Esto reemplazará tu configuración actual. ¿Deseas continuar?")) {
+                    levers = safeLevers;
+                    modules = importedData.modules || [];
+                    localStorage.setItem('valueLevers', JSON.stringify(levers));
+                    localStorage.setItem('softwareModules', JSON.stringify(modules));
+                    renderAllTabs();
+                    const inputValues = importedData.inputValues || {};
+                    Object.entries(inputValues).forEach(([gIndex, value]) => {
+                        const input = document.getElementById(`input-gq-${gIndex}`);
+                        if (input) input.value = value;
+                    });
+                    localStorage.setItem('leverInputValues', JSON.stringify(inputValues));
+                    app.calculateAllLevers();
+                    alert("Configuración importada con éxito.");
+                }
+            } catch (error) { alert("Error al importar el archivo: " + error.message); } 
+            finally { importFile.value = ''; }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- INICIALIZACIÓN ---
+    addQuestionBtn.addEventListener('click', () => addQuestionField());
+    configForm.addEventListener('submit', saveLever);
+    moduleForm.addEventListener('submit', app.addModule);
+    cancelEditBtn.addEventListener('click', resetConfigForm);
+    clearStorageBtn.addEventListener('click', () => {
+        if (confirm("¿Estás seguro de que quieres eliminar TODOS los datos guardados en el navegador? Esta acción es irreversible.")) {
+            localStorage.clear();
+            levers = [];
+            modules = [];
+            renderAllTabs();
+            resetConfigForm(); 
+            alert("Todos los datos locales han sido eliminados.");
+        }
+    });
+    // --- SELECTOR DE ESCENARIO ---
+    const scenarioSelector = document.getElementById('scenario-selector');
+    if (scenarioSelector) {
+        scenarioSelector.addEventListener('change', function() {
+            const scenario = this.value;
+            if (!scenario) return;
+            levers.forEach(lever => {
+                const slider = document.getElementById(`benefit-${lever.id}`);
+                if (!slider) return;
+                let val;
+                if (scenario === 'conservador') val = lever.benefitMin;
+                else if (scenario === 'intermedio') val = (lever.benefitMin + lever.benefitMax) / 2;
+                else if (scenario === 'probable') val = lever.benefitMax;
+                slider.value = val;
+            });
+            app.calculateAllLevers();
+        });
+    }
+
+    window.app.switchTab = switchTab;
+    renderAllTabs();
+    resetConfigForm();
+});
+
+// ===== JAVASCRIPT DE INDICADORES FINANCIEROS =====
+document.addEventListener('DOMContentLoaded', () => {
+    const currencyEl = document.getElementById('currency');
+    const chartCardTitle = document.getElementById('chart-card-title');
+    const costsCardTitle = document.getElementById('costs-card-title');
+    const metricsCardTitle = document.getElementById('metrics-card-title');
+    const otherItemsCardTitle = document.getElementById('other-items-card-title');
+    const cashFlowTitleText = document.getElementById('cash-flow-title-text');
+    const yearsInput = document.getElementById('contractYears');
+    const adoptionContainer = document.getElementById('adoption-curve-inputs');
+    const subscriptionContainer = document.getElementById('subscription-costs-inputs');
+    const implementationContainer = document.getElementById('implementation-costs-inputs');
+    const cashFlowHeader = document.getElementById('cash-flow-header');
+    const cashFlowBenefits = document.getElementById('cash-flow-benefits');
+    const cashFlowSubscription = document.getElementById('cash-flow-subscription');
+    const cashFlowImplementation = document.getElementById('cash-flow-implementation');
+    const cashFlowNet = document.getElementById('cash-flow-net');
+    const cashFlowCumulative = document.getElementById('cash-flow-cumulative');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const addOtherItemBtn = document.getElementById('add-other-item-btn');
+    const otherItemsContainer = document.getElementById('other-items-container');
+    const newBtn = document.getElementById('new-btn');
+    const openBtn = document.getElementById('open-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const exportPptxBtn = document.getElementById('export-pptx-btn');
+    const fileInput = document.getElementById('file-input');
+    const resetModal = document.getElementById('reset-modal');
+    const confirmResetBtn = document.getElementById('confirm-reset-btn');
+    const cancelResetBtn = document.getElementById('cancel-reset-btn');
+    const openConfirmModal = document.getElementById('open-confirm-modal');
+    const confirmOpenBtn = document.getElementById('confirm-open-btn');
+    const cancelOpenBtn = document.getElementById('cancel-open-btn');
+    const saveOptionsModal = document.getElementById('save-options-modal');
+    const cancelSaveBtn = document.getElementById('cancel-save-btn');
+    const overwriteVersionBtn = document.getElementById('overwrite-version-btn');
+    const saveAsNewVersionBtn = document.getElementById('save-as-new-version-btn');
+    const newVersionNameInput = document.getElementById('new-version-name');
+    const openVersionModal = document.getElementById('open-version-modal');
+    const versionSelector = document.getElementById('version-selector');
+    const cancelLoadVersionBtn = document.getElementById('cancel-load-version-btn');
+    const confirmLoadVersionBtn = document.getElementById('confirm-load-version-btn');
+    const versionSwitcher = document.getElementById('version-switcher');
+    const firstSaveModal = document.getElementById('first-save-modal');
+    const confirmFirstSaveBtn = document.getElementById('confirm-first-save-btn');
+    const cancelFirstSaveBtn = document.getElementById('cancel-first-save-btn');
+    const firstVersionNameInput = document.getElementById('first-version-name');
+    const versionChangeConfirmModal = document.getElementById('version-change-confirm-modal');
+    const confirmVersionChangeBtn = document.getElementById('confirm-version-change-btn');
+    const cancelVersionChangeBtn = document.getElementById('cancel-version-change-btn');
+    const vpnMetricBox = document.getElementById('vpn-metric-box');
+    const npvAnalysisPopover = document.getElementById('npv-analysis-popover');
+    const requiredBenefitValueEl = document.getElementById('required-benefit-value');
+    const benefitDifferenceTextEl = document.getElementById('benefit-difference-text');
+    const metricTooltipPopover = document.getElementById('metric-tooltip-popover');
+
+    let npvPopoverHideTimeout;
+    let metricTooltipHideTimeout;
+    let resultsChart = null;
+    let loadedFileData = null;
+    let currentVersionIndex = -1;
+    let currentFileName = '';
+    let lastCalculationResults = null;
+    let shouldAutoCalculateOnLoad = false;
+    let otherItemsData = [];
+    let currentFileHandle = null;
+
+    const DEFAULT_CURRENCIES = [
+        { value: 'USD', label: 'Dólar Americano (USD)', symbol: '$', locale: 'en-US' },
+        { value: 'MXN', label: 'Peso Mexicano (MXN)', symbol: '$', locale: 'es-MX' },
+        { value: 'EUR', label: 'Euro (EUR)', symbol: '€', locale: 'de-DE' }
+    ];
+
+    const getCurrencyConfig = () => {
+        const stored = localStorage.getItem('configCurrenciesFull');
+        return stored ? JSON.parse(stored) : DEFAULT_CURRENCIES;
+    };
+
+    const saveCurrencyConfig = (arr) => {
+        localStorage.setItem('configCurrenciesFull', JSON.stringify(arr));
+    };
+
+    const getCurrencyMap = () => {
+        const map = {};
+        getCurrencyConfig().forEach(c => { map[c.value] = { symbol: c.symbol, locale: c.locale }; });
+        return map;
+    };
+
+    const chartColors = ['#FF6384', '#4BC0C0', '#FF9F40', '#9966FF', '#FFCD56', '#C9CBCF', '#36A2EB', '#E7E9ED'];
+
+    const parseNumericValue = (valueStr) => {
+        if (typeof valueStr !== 'string' || !valueStr) return 0;
+        return parseFloat(valueStr.replace(/[$,€]/g, '')) || 0;
+    };
+
+    const getConfigDiscountRate = () => {
+        const stored = localStorage.getItem('configDiscountRate') || '0';
+        return parseFloat(stored.replace(',', '.')) / 100 || 0;
+    };
+
+    const renderCurrenciesList = () => {
+        const list = document.getElementById('currencies-list');
+        if (!list) return;
+        const currencies = getCurrencyConfig();
+        list.innerHTML = '';
+        currencies.forEach((c, idx) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f0f0f0;';
+            row.innerHTML = `<span style="flex:1; font-size:0.9rem;">${c.label}</span><span style="color:#888; font-size:0.8rem; width:50px; text-align:center;">${c.value}</span><span style="color:#888; font-size:0.8rem; width:30px; text-align:center;">${c.symbol}</span><button class="secondary currency-edit-btn" data-index="${idx}" style="padding:4px 10px; font-size:0.8rem; white-space:nowrap;">Editar</button><button class="danger currency-delete-btn" data-index="${idx}" style="padding:4px 10px; font-size:0.8rem;">Eliminar</button>`;
+            list.appendChild(row);
+        });
+    };
+
+    const updateCurrencyDropdown = () => {
+        const currencies = getCurrencyConfig();
+        const currentVal = currencyEl.value;
+        currencyEl.innerHTML = '';
+        currencies.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.value;
+            opt.textContent = c.label;
+            currencyEl.appendChild(opt);
+        });
+        if (currencies.some(c => c.value === currentVal)) currencyEl.value = currentVal;
+    };
+
+    const loadConfigParams = () => {
+        const rate = localStorage.getItem('configDiscountRate') || '';
+        const configDiscountRateEl = document.getElementById('configDiscountRate');
+        if (configDiscountRateEl) configDiscountRateEl.value = rate;
+        const savedDefaultYears = localStorage.getItem('defaultAdoptionYears');
+        if (savedDefaultYears) {
+            const el = document.getElementById('defaultAdoptionYearsConfig');
+            if (el) el.value = savedDefaultYears;
+        }
+        renderDefaultAdoptionInputs();
+        renderCurrenciesList();
+        updateCurrencyDropdown();
+    };
+    const formatAsThousands = (num) => isNaN(num) ? '-' : (num / 1000).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const formatCurrencyThousands = (num) => {
+        if (isNaN(num)) return '-';
+        const symbol = getCurrencyMap()[currencyEl.value]?.symbol || '$';
+        return `${symbol}${formatAsThousands(num)}`;
+    };
+    const formatCurrencyThousandsWithK = (num) => {
+        const formatted = formatCurrencyThousands(num);
+        return formatted === '-' ? '-' : `${formatted} K`;
+    };
+    const formatPercent = (num) => isNaN(num) ? '-' : num.toLocaleString('es-MX', { style: 'percent', minimumFractionDigits: 1 });
+    const formatYears = (num) => isNaN(num) ? '-' : num.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    const updateTitlesWithCurrency = () => {
+        const selectedCurrency = currencyEl.value;
+        costsCardTitle.textContent = `Costos por año (en ${selectedCurrency})`;
+        otherItemsCardTitle.textContent = `Otros costos y beneficios por año (en ${selectedCurrency})`;
+        metricsCardTitle.textContent = `Indicadores financieros (en miles de ${selectedCurrency})`;
+        cashFlowTitleText.textContent = `Flujo de efectivo por año (en miles de ${selectedCurrency})`;
+        chartCardTitle.textContent = `Gráfico de beneficios vs. costos (en miles de ${selectedCurrency})`;
+        const badge = document.getElementById('header-currency-badge');
+        if (badge) badge.textContent = selectedCurrency;
+    };
+
+    const hasData = () => {
+        if (document.getElementById('clientName').value.trim() !== '') return true;
+        if (document.getElementById('numberOfEmployees').value.trim() !== '') return true;
+        if (document.getElementById('annualBenefit').value.trim() !== '') return true;
+        const yearlyInputs = document.querySelectorAll('.yearly-input');
+        for (const input of yearlyInputs) {
+            if (parseNumericValue(input.value) !== 0) return true;
+        }
+        return false;
+    };
+
+    const resetState = () => {
+        loadedFileData = null;
+        currentVersionIndex = -1;
+        currentFileName = '';
+        const headerTitle = document.querySelector('.calc-toolbar .header-title');
+        if (headerTitle) headerTitle.textContent = 'Ingreso de información';
+        otherItemsData = [];
+        currentFileHandle = null;
+        lastCalculationResults = null;
+        versionSwitcher.innerHTML = '';
+        versionSwitcher.style.display = 'none';
+    };
+
+    const generateYearlyFields = () => {
+        const years = parseInt(yearsInput.value) || 0;
+        const currentAdoption = {}, currentSubscription = {}, currentImplementation = {};
+        const saveValues = (container, storage) => {
+            container.querySelectorAll('input').forEach(input => {
+                const year = input.getAttribute('data-year');
+                if (year) storage[year] = input.value;
+            });
+        };
+        saveValues(adoptionContainer, currentAdoption);
+        saveValues(subscriptionContainer, currentSubscription);
+        saveValues(implementationContainer, currentImplementation);
+        const itemElements = document.querySelectorAll('.other-item-entry');
+        itemElements.forEach(el => {
+            const id = parseInt(el.dataset.id);
+            const item = otherItemsData.find(i => i.id === id);
+            if (item) {
+                item.name = el.querySelector('.item-name').value;
+                item.type = el.querySelector('.item-type').value;
+                item.values = {};
+                saveValues(el.querySelector('.yearly-inputs-container'), item.values);
+            }
+        });
+        adoptionContainer.innerHTML = '';
+        subscriptionContainer.innerHTML = '';
+        implementationContainer.innerHTML = '';
+        otherItemsContainer.innerHTML = '';
+        let headerHTML = '<th></th>';
+        let benefitsHTML = '<td>Beneficio</td>';
+        let subscriptionHTML = '<td>Costo Suscripción</td>';
+        let implementationHTML = '<td>Costo Implementación</td>';
+        let netHTML = '<td>Flujo de Caja</td>';
+        let cumulativeHTML = '<td>Flujo Acumulado</td>';
+        for (let i = 1; i <= years; i++) {
+            let adoptValue = currentAdoption[i] || '';
+            if (adoptValue === '') {
+                const defAdoption = JSON.parse(localStorage.getItem('defaultAdoptionCurve') || '{}');
+                const defKeys = Object.keys(defAdoption).map(Number).sort((a, b) => a - b);
+                const lastKey = defKeys.length > 0 ? Math.max(...defKeys) : 0;
+                if (lastKey > 0) adoptValue = defAdoption[i] !== undefined ? defAdoption[i] : defAdoption[lastKey];
+            }
+            adoptionContainer.innerHTML += `<div class="yearly-input-group"><label>Año ${i} <span style="color:red">*</span></label><input type="text" class="numeric-percent yearly-input" data-year="${i}" placeholder="0.0" value="${adoptValue || ''}"></div>`;
+            subscriptionContainer.innerHTML += `<div class="yearly-input-group"><label>Año ${i} <span style="color:red">*</span></label><input type="text" class="numeric-currency yearly-input" data-year="${i}" placeholder="0.00" value="${currentSubscription[i] || ''}"></div>`;
+            implementationContainer.innerHTML += `<div class="yearly-input-group"><label>Año ${i} <span style="color:red">*</span></label><input type="text" class="numeric-currency yearly-input" data-year="${i}" placeholder="0.00" value="${currentImplementation[i] || ''}"></div>`;
+            headerHTML += `<th>Año ${i}</th>`;
+            benefitsHTML += `<td>-</td>`;
+            subscriptionHTML += `<td>-</td>`;
+            implementationHTML += `<td>-</td>`;
+            netHTML += `<td>-</td>`;
+            cumulativeHTML += `<td>-</td>`;
+        }
+        otherItemsData.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'other-item-entry';
+            itemDiv.dataset.id = item.id;
+            let inputsHTML = '<div class="yearly-inputs-container">';
+            for (let i = 1; i <= years; i++) {
+                inputsHTML += `<div class="yearly-input-group"><label>Año ${i}</label><input type="text" class="numeric-currency yearly-input" data-year="${i}" placeholder="0.00" value="${item.values[i] || ''}"></div>`;
+            }
+            inputsHTML += '</div>';
+            itemDiv.innerHTML = `
+                <div class="other-item-header">
+                    <input type="text" class="item-name" placeholder="Nombre del rubro (ej. Licencias extra)" value="${item.name}">
+                    <select class="item-type">
+                        <option value="cost" ${item.type === 'cost' ? 'selected' : ''}>Costo</option>
+                        <option value="benefit" ${item.type === 'benefit' ? 'selected' : ''}>Beneficio</option>
+                    </select>
+                    <button class="delete-btn" onclick="removeOtherItem(${item.id})"><span class="material-symbols-outlined">delete</span></button>
+                </div>${inputsHTML}`;
+            otherItemsContainer.appendChild(itemDiv);
+        });
+        cashFlowHeader.innerHTML = headerHTML;
+        cashFlowBenefits.innerHTML = benefitsHTML;
+        cashFlowSubscription.innerHTML = subscriptionHTML;
+        cashFlowImplementation.innerHTML = implementationHTML;
+        const cfOtherInit = document.getElementById('cash-flow-other-items-container');
+        if (cfOtherInit) cfOtherInit.innerHTML = '';
+        cashFlowNet.innerHTML = netHTML;
+        cashFlowCumulative.innerHTML = cumulativeHTML;
+        addFormattingListeners();
+    };
+
+    window.addOtherItem = () => {
+        otherItemsData.push({ id: Date.now(), name: '', type: 'cost', values: {} });
+        generateYearlyFields();
+    };
+    window.removeOtherItem = (id) => {
+        otherItemsData = otherItemsData.filter(item => item.id !== id);
+        generateYearlyFields();
+    };
+
+    const formatInput = (event, type) => {
+        const input = event.target;
+        if (input.value.trim() === '') return;
+        const numberValue = parseNumericValue(input.value);
+        let options = (type === 'currency')
+            ? { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            : { style: 'decimal', minimumFractionDigits: 1, maximumFractionDigits: 1 };
+        input.value = numberValue.toLocaleString('es-MX', options);
+    };
+
+    const addFormattingListeners = () => {
+        document.querySelectorAll('#calculadora-container .numeric-currency').forEach(i => i.addEventListener('blur', (e) => formatInput(e, 'currency')));
+        document.querySelectorAll('#calculadora-container .numeric-percent').forEach(i => i.addEventListener('blur', (e) => formatInput(e, 'percent')));
+    };
+
+    const numberOfEmployeesEl = document.getElementById('numberOfEmployees');
+    if (numberOfEmployeesEl) {
+        numberOfEmployeesEl.addEventListener('blur', () => {
+            const raw = parseNumericValue(numberOfEmployeesEl.value);
+            if (!isNaN(raw) && raw > 0) numberOfEmployeesEl.value = Math.round(raw).toLocaleString('es-MX');
+        });
+    }
+
+    const getCurrentFormData = () => {
+        const years = parseInt(yearsInput.value);
+        const data = {
+            currency: currencyEl.value,
+            contractYears: years,
+            numberOfEmployees: document.getElementById('numberOfEmployees').value,
+            annualBenefit: document.getElementById('annualBenefit').value,
+            adoptionCurve: [], subscriptionCosts: [], implementationCosts: [], otherItems: []
+        };
+        for (let i = 1; i <= years; i++) {
+            data.adoptionCurve.push(adoptionContainer.querySelector(`[data-year="${i}"]`)?.value || '');
+            data.subscriptionCosts.push(subscriptionContainer.querySelector(`[data-year="${i}"]`)?.value || '');
+            data.implementationCosts.push(implementationContainer.querySelector(`[data-year="${i}"]`)?.value || '');
+        }
+        document.querySelectorAll('.other-item-entry').forEach(el => {
+            const id = parseInt(el.dataset.id);
+            const name = el.querySelector('.item-name').value;
+            const type = el.querySelector('.item-type').value;
+            const values = {};
+            el.querySelectorAll('.yearly-input').forEach(inp => values[inp.dataset.year] = inp.value);
+            data.otherItems.push({ id, name, type, values });
+        });
+        return data;
+    };
+
+    const performCalculations = () => {
+        const annualBenefit = parseNumericValue(document.getElementById('annualBenefit').value);
+        const discountRate = getConfigDiscountRate();
+        const years = parseInt(yearsInput.value) || 0;
+        const adoptionCurve = Array.from({length: years}, (_, i) => parseNumericValue(adoptionContainer.querySelector(`[data-year="${i+1}"]`)?.value) / 100);
+        const subscriptionCosts = Array.from({length: years}, (_, i) => parseNumericValue(subscriptionContainer.querySelector(`[data-year="${i+1}"]`)?.value));
+        const implementationCosts = Array.from({length: years}, (_, i) => parseNumericValue(implementationContainer.querySelector(`[data-year="${i+1}"]`)?.value));
+        const otherItemsResults = [];
+        document.querySelectorAll('.other-item-entry').forEach(el => {
+            const name = el.querySelector('.item-name').value || 'Sin nombre';
+            const type = el.querySelector('.item-type').value;
+            const yearlyValues = Array.from({length: years}, (_, i) => parseNumericValue(el.querySelector(`[data-year="${i+1}"]`)?.value));
+            otherItemsResults.push({ name, type, values: yearlyValues });
+        });
+        let baseYearlyBenefits = [], yearlyBenefits = [], cashFlows = [], cumulativeCashFlows = [], yearlyCosts = [];
+        let cumulativeFlow = 0;
+        for (let i = 0; i < years; i++) {
+            const baseBenefit = annualBenefit * adoptionCurve[i];
+            let totalBenefit = baseBenefit;
+            let cost = subscriptionCosts[i] + implementationCosts[i];
+            otherItemsResults.forEach(item => {
+                if (item.type === 'benefit') totalBenefit += item.values[i];
+                else cost += item.values[i];
+            });
+            const netFlow = totalBenefit - cost;
+            cumulativeFlow += netFlow;
+            baseYearlyBenefits.push(baseBenefit);
+            yearlyBenefits.push(totalBenefit);
+            yearlyCosts.push(cost);
+            cashFlows.push(netFlow);
+            cumulativeCashFlows.push(cumulativeFlow);
+        }
+        let npv = 0, pvCosts = 0;
+        for (let i = 0; i < years; i++) {
+            const discountFactor = Math.pow(1 + discountRate, i + 1);
+            npv += cashFlows[i] / discountFactor;
+            pvCosts += yearlyCosts[i] / discountFactor;
+        }
+        const roi = pvCosts === 0 ? 0 : npv / pvCosts;
+        const delayCost = discountRate > 0 ? ((npv * discountRate) / 12) * 3 : 0;
+        const irr = calculateIRR(cashFlows);
+        const mirr = calculateMIRR(cashFlows, discountRate, 0);
+        let paybackPeriod = '-';
+        for (let i = 0; i < years; i++) {
+            if (cumulativeCashFlows[i] > 0) {
+                const priorCumulative = i > 0 ? cumulativeCashFlows[i-1] : cashFlows[0];
+                paybackPeriod = i + ((0 - priorCumulative) / cashFlows[i]);
+                break;
+            }
+        }
+        if (paybackPeriod === '-' && cumulativeCashFlows[0] > 0) {
+            paybackPeriod = 1 + ((0 - (-(yearlyCosts[0] || 0))) / cashFlows[0]);
+        }
+        const formatAndColor = (num) => {
+            const formattedNum = formatAsThousands(num);
+            if (isNaN(num)) return '-';
+            if (num > 0.05) return `<span class="positive-text">${formattedNum}</span>`;
+            if (num < -0.05) return `<span class="negative-text">${formattedNum}</span>`;
+            return formattedNum;
+        };
+        updateMetric('vpn', npv, formatCurrencyThousandsWithK);
+        updateMetric('roi', roi, formatPercent);
+        updateMetric('tir', irr, formatPercent);
+        updateMetric('mirr', mirr, formatPercent);
+        updateMetric('delay-cost', delayCost, formatCurrencyThousandsWithK);
+        updateMetric('payback', paybackPeriod, formatYears);
+        updateTitlesWithCurrency();
+        cashFlowBenefits.innerHTML = '<td>Beneficio base</td>' + baseYearlyBenefits.map(b => `<td>${formatAndColor(b)}</td>`).join('');
+        cashFlowSubscription.innerHTML = '<td>Costo Suscripción</td>' + subscriptionCosts.map(c => `<td>${formatAndColor(-c)}</td>`).join('');
+        cashFlowImplementation.innerHTML = '<td>Costo Implementación</td>' + implementationCosts.map(c => `<td>${formatAndColor(-c)}</td>`).join('');
+        const cfOtherContainer = document.getElementById('cash-flow-other-items-container');
+        cfOtherContainer.innerHTML = '';
+        otherItemsResults.forEach(item => {
+            const tr = document.createElement('tr');
+            const sign = item.type === 'cost' ? -1 : 1;
+            tr.innerHTML = `<td>${item.name || 'Sin nombre'} (${item.type === 'benefit' ? 'Beneficio' : 'Costo'})</td>` +
+                item.values.map(v => `<td>${formatAndColor(v * sign)}</td>`).join('');
+            cfOtherContainer.appendChild(tr);
+        });
+        cashFlowNet.innerHTML = '<td>Flujo de Caja</td>' + cashFlows.map(c => `<td>${formatAndColor(c)}</td>`).join('');
+        cashFlowCumulative.innerHTML = '<td>Flujo Acumulado</td>' + cumulativeCashFlows.map(c => `<td>${formatAndColor(c)}</td>`).join('');
+        const labels = Array.from({length: years}, (_, i) => `Año ${i+1}`);
+        drawChart(labels, baseYearlyBenefits, subscriptionCosts, implementationCosts, otherItemsResults);
+        lastCalculationResults = { labels, baseYearlyBenefits, yearlyBenefits, subscriptionCosts, implementationCosts, otherItemsResults, adoptionCurve, cashFlows, cumulativeCashFlows, metrics: { npv, roi, irr, mirr, delayCost, paybackPeriod } };
+        if (resultsChart) setTimeout(() => resultsChart.resize(), 10);
+    };
+
+    const updateMetric = (id, value, formatter) => {
+        const valueEl = document.getElementById(`${id}-value`);
+        const tagEl = document.getElementById(`${id}-tag`);
+        valueEl.textContent = formatter(value);
+        valueEl.classList.remove('positive', 'negative');
+        tagEl.classList.remove('positive-bg', 'negative-bg');
+        tagEl.textContent = '';
+        if (!isNaN(value) && value !== '-') {
+            if (id === 'payback') {
+                tagEl.style.visibility = 'hidden';
+            } else {
+                tagEl.style.visibility = 'visible';
+                if (value >= 0) { valueEl.classList.add('positive'); tagEl.classList.add('positive-bg'); tagEl.textContent = 'Positivo'; }
+                else { valueEl.classList.add('negative'); tagEl.classList.add('negative-bg'); tagEl.textContent = 'Negativo'; }
+            }
+        } else { tagEl.style.visibility = 'hidden'; }
+        // Actualizar indicador en el header
+        const headerIdMap = { roi: 'header-roi-value', tir: 'header-tir-value', mirr: 'header-mirr-value', payback: 'header-payback-value' };
+        const headerEl = document.getElementById(headerIdMap[id]);
+        if (headerEl) headerEl.textContent = (!isNaN(value) && value !== '-') ? formatter(value) : '-';
+    };
+
+    function calculateNPV(rate, values) {
+        return values.reduce((acc, val, i) => acc + val / Math.pow(1 + rate, i + 1), 0);
+    }
+    function calculateIRR(values, guess = 0.1, iterations = 100, tolerance = 1e-6) {
+        let rate = guess;
+        for (let i = 0; i < iterations; i++) {
+            const npv = calculateNPV(rate, values);
+            if (Math.abs(npv) < tolerance) return rate;
+            const derivative = values.reduce((acc, val, j) => acc - (j + 1) * val / Math.pow(1 + rate, j + 2), 0);
+            if (Math.abs(derivative) < tolerance) break;
+            rate -= npv / derivative;
+        }
+        return NaN;
+    }
+    function calculateMIRR(cashFlows, financeRate, reinvestRate) {
+        const n = cashFlows.length;
+        if (n < 2) return NaN;
+        let pvNegative = 0, fvPositive = 0;
+        cashFlows.forEach((flow, i) => { if (flow < 0) pvNegative += flow / Math.pow(1 + financeRate, i); });
+        cashFlows.forEach((flow, i) => { if (flow > 0) fvPositive += flow * Math.pow(1 + reinvestRate, n - 1 - i); });
+        if (pvNegative === 0 || fvPositive === 0) return NaN;
+        return Math.pow(fvPositive / -pvNegative, 1 / (n - 1)) - 1;
+    }
+
+    const drawChart = (labels, benefitsData, subscriptionData, implementationData, otherItems) => {
+        const ctx = document.getElementById('resultsChart').getContext('2d');
+        if (resultsChart) resultsChart.destroy();
+        const datasets = [
+            { label: 'Beneficios (Base)', data: benefitsData, backgroundColor: '#0070F2' },
+            { label: 'Costo Suscripción', data: subscriptionData.map(c => -c), backgroundColor: '#5B738B' },
+            { label: 'Costo Implementación', data: implementationData.map(c => -c), backgroundColor: '#A9B4BE' }
+        ];
+        otherItems.forEach((item, index) => {
+            const color = chartColors[index % chartColors.length];
+            datasets.push({ label: item.name, data: item.type === 'cost' ? item.values.map(v => -v) : item.values, backgroundColor: color });
+        });
+        resultsChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: value => formatCurrencyThousands(value) + 'k' } } },
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 14 } } },
+                    datalabels: { color: 'white', font: { weight: 'bold' }, formatter: (value) => Math.abs(value) < 1000 ? '' : formatAsThousands(value) },
+                    tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatCurrencyThousands(context.raw)}k` } }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    };
+
+    const resetForm = () => {
+        const calcContainer = document.getElementById('calculadora-container') || document;
+        calcContainer.querySelectorAll('input').forEach(i => { if (i.id !== 'contractYears') i.value = ''; });
+        document.getElementById('contractYears').value = 5;
+        ['vpn', 'roi', 'tir', 'mirr', 'delay-cost', 'payback'].forEach(id => {
+            const valueEl = document.getElementById(`${id}-value`);
+            const tagEl = document.getElementById(`${id}-tag`);
+            if (valueEl) { valueEl.textContent = '-'; valueEl.classList.remove('positive', 'negative'); }
+            if (tagEl) { tagEl.textContent = ''; tagEl.classList.remove('positive-bg', 'negative-bg'); }
+        });
+        if (resultsChart) { resultsChart.destroy(); resultsChart = null; }
+        otherItemsData = [];
+        generateYearlyFields();
+        resetState();
+        if (typeof window.app.resetModuleSelections === 'function') {
+            window.app.resetModuleSelections();
+        }
+        ['header-roi-value', 'header-tir-value', 'header-mirr-value', 'header-payback-value'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '-';
+        });
+        resetModal.style.display = 'none';
+    };
+
+    const getChartImageForExport = () => {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 1920; tempCanvas.height = 1080;
+        const exportLabels = lastCalculationResults.labels.map((label, index) => {
+            return [label, (lastCalculationResults.adoptionCurve[index] * 100).toFixed(0) + '%'];
+        });
+        const exportOptions = {
+            responsive: false, maintainAspectRatio: false, animation: false,
+            scales: {
+                x: { stacked: true, ticks: { font: { size: 28 } } },
+                y: { type: 'linear', display: true, position: 'left', stacked: true, ticks: { callback: value => formatCurrencyThousands(value) + 'k', font: { size: 28 } }, title: { display: true, text: `Miles de ${currencyEl.value}`, font: { size: 22 } } }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 32 } } },
+                datalabels: { color: 'white', font: { weight: 'bold', size: 36 }, formatter: (value) => Math.abs(value) < 1000 ? '' : formatAsThousands(value) },
+                tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatCurrencyThousands(context.raw)}k` } }
+            }
+        };
+        const datasets = [
+            { label: 'Beneficios (Base)', data: lastCalculationResults.baseYearlyBenefits, backgroundColor: '#0070F2', yAxisID: 'y' },
+            { label: 'Costo Suscripción', data: lastCalculationResults.subscriptionCosts.map(c => -c), backgroundColor: '#5B738B', yAxisID: 'y' },
+            { label: 'Costo Implementación', data: lastCalculationResults.implementationCosts.map(c => -c), backgroundColor: '#A9B4BE', yAxisID: 'y' }
+        ];
+        lastCalculationResults.otherItemsResults.forEach((item, index) => {
+            const color = chartColors[index % chartColors.length];
+            datasets.push({ label: item.name, data: item.type === 'cost' ? item.values.map(v => -v) : item.values, backgroundColor: color, yAxisID: 'y' });
+        });
+        const tempChart = new Chart(tempCanvas.getContext('2d'), { type: 'bar', data: { labels: exportLabels, datasets }, options: exportOptions, plugins: [ChartDataLabels] });
+        const chartImage = tempChart.toBase64Image();
+        tempChart.destroy();
+        return chartImage;
+    };
+
+    const exportToPptx = () => {
+        if (!lastCalculationResults || !resultsChart) { alert('Por favor, ejecuta un cálculo antes de exportar.'); return; }
+        let pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        const selectedCurrency = currencyEl.value;
+        const clientName = loadedFileData?.clientName || document.getElementById('clientName').value.trim() || 'Análisis Financiero';
+        const versionName = loadedFileData ? loadedFileData.versions[currentVersionIndex].versionName : 'Cálculo Actual';
+        const fileName = `${clientName.replace(/\s+/g, '_')}_${versionName.replace(/\s+/g, '_')}.pptx`;
+        let slide = pptx.addSlide();
+        slide.background = { color: 'FFFFFF' };
+        const slideW = 13.33, graphW = 6.2, rightColW = 5.5, gap = 0.4;
+        const totalContentW = graphW + gap + rightColW;
+        const marginX = (slideW - totalContentW) / 2;
+        const graphX = marginX, rightColX = marginX + graphW + gap;
+        slide.addText(`Indicadores financieros del proyecto: ${clientName}`, { x: graphX, y: 0.5, w: totalContentW, h: 0.5, fontSize: 24, bold: true, color: '000000', align: 'left' });
+        const contentStartY = 1.8, sectionTitleH = 0.4;
+        const sectionTitleOpts = { fontSize: 16, bold: true, color: '003366' };
+        slide.addText(`Gráfico de beneficios vs. costos (en miles de ${selectedCurrency})`, { x: graphX, y: contentStartY, w: graphW, h: sectionTitleH, ...sectionTitleOpts });
+        const chartImage = getChartImageForExport();
+        const graphH = graphW * (9 / 16);
+        slide.addImage({ data: chartImage, x: graphX, y: contentStartY + sectionTitleH, w: graphW, h: graphH });
+        let currentY = contentStartY;
+        slide.addText('Indicadores financieros', { x: rightColX, y: currentY, w: rightColW, h: sectionTitleH, ...sectionTitleOpts });
+        currentY += sectionTitleH;
+        const metrics = [
+            { id: 'vpn', title: 'Valor Presente Neto (VPN)', value: formatCurrencyThousandsWithK(lastCalculationResults.metrics.npv), rawValue: lastCalculationResults.metrics.npv },
+            { id: 'roi', title: 'Retorno de Inversión (ROI)', value: formatPercent(lastCalculationResults.metrics.roi), rawValue: lastCalculationResults.metrics.roi },
+            { id: 'tir', title: 'Tasa Interna de Retorno (TIR)', value: formatPercent(lastCalculationResults.metrics.irr), rawValue: lastCalculationResults.metrics.irr },
+            { id: 'mirr', title: 'TIR Modificada (TIRM)', value: formatPercent(lastCalculationResults.metrics.mirr), rawValue: lastCalculationResults.metrics.mirr },
+            { id: 'payback', title: 'Recuperación (años)', value: `${formatYears(lastCalculationResults.metrics.paybackPeriod)}`, rawValue: lastCalculationResults.metrics.paybackPeriod },
+            { id: 'delay-cost', title: 'Costo Atraso (3 meses)', value: formatCurrencyThousandsWithK(lastCalculationResults.metrics.delayCost), rawValue: lastCalculationResults.metrics.delayCost },
+        ];
+        const boxWidth = (rightColW - 0.2) / 2, boxHeight = 0.8, horizontalGap = 0.2, verticalGap = 0.1;
+        const createMetricBox = (metric, boxX) => {
+            if (!metric) return;
+            const isPositive = !isNaN(metric.rawValue) && metric.rawValue >= 0;
+            const isPayback = metric.id === 'payback';
+            let tagText = '', tagFill = '', tagColor = '';
+            if (!isPayback && !isNaN(metric.rawValue)) {
+                tagText = isPositive ? 'Positivo' : 'Negativo';
+                tagFill = isPositive ? 'E6F9F0' : 'FDECEC';
+                tagColor = isPositive ? '1A8A52' : 'DC3545';
+            }
+            const valueColor = isPayback ? '333333' : (isPositive ? '1A8A52' : 'DC3545');
+            slide.addShape(pptx.shapes.RECTANGLE, { x: boxX, y: currentY, w: boxWidth, h: boxHeight, fill: { color: 'FFFFFF' }, line: { color: 'E9ECEF', width: 1 } });
+            slide.addText(metric.title, { x: boxX + 0.2, y: currentY + 0.1, w: boxWidth - 1.4, h: 0.3, fontSize: 9, color: '495057', bold: true });
+            if (tagText) {
+                const tagW = 1.0, tagH = 0.2;
+                slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, { x: boxX + boxWidth - tagW - 0.15, y: currentY + 0.1, w: tagW, h: tagH, fill: { color: tagFill }, line: { color: tagFill } });
+                slide.addText(tagText, { x: boxX + boxWidth - tagW - 0.15, y: currentY + 0.1, w: tagW, h: tagH, align: 'center', valign: 'middle', fontSize: 8, color: tagColor, bold: true });
+            }
+            slide.addText(metric.value, { x: boxX + 0.2, y: currentY + 0.3, w: boxWidth - 0.4, h: 0.5, fontSize: 24, bold: true, color: valueColor, valign: 'top' });
+        };
+        for (let i = 0; i < metrics.length; i += 2) {
+            createMetricBox(metrics[i], rightColX);
+            createMetricBox(metrics[i + 1], rightColX + boxWidth + horizontalGap);
+            currentY += boxHeight + verticalGap;
+        }
+        const cashFlowTableY = currentY + 0.1;
+        slide.addText('Flujo de Efectivo por Año (en miles)', { x: rightColX, y: cashFlowTableY, w: rightColW, h: 0.4, fontSize: 16, bold: true, color: '003366' });
+        const { labels, yearlyBenefits, subscriptionCosts, implementationCosts, otherItemsResults, cashFlows, cumulativeCashFlows } = lastCalculationResults;
+        const tableNumFormat = (val) => (formatAsThousands(val) === '-' ? '0.0' : formatAsThousands(val));
+        const headerRow = [''].concat(labels).map((cell, i) => ({ text: cell, options: { bold: true, fill: 'F2F2F2', color: '333333', align: i === 0 ? 'left' : 'right', fontSize: 9 } }));
+        const benefitRow = [{ text: 'Beneficio', options: { bold: true, align: 'left', fontSize: 9 } }].concat(yearlyBenefits.map(v => ({ text: tableNumFormat(v), options: { fontSize: 9, color: v >= 0 ? '008000' : 'C00000', align: 'right' } })));
+        const subscriptionRow = [{ text: 'Costo Suscripción', options: { bold: true, align: 'left', fontSize: 9 } }].concat(subscriptionCosts.map(v => ({ text: tableNumFormat(-v), options: { fontSize: 9, color: 'C00000', align: 'right' } })));
+        const thickBorder = { bottom: { pt: 1.5, color: '000000' } };
+        const implementationRow = [{ text: 'Costo Implementación', options: { bold: true, align: 'left', fontSize: 9 } }].concat(implementationCosts.map(v => ({ text: tableNumFormat(-v), options: { fontSize: 9, color: 'C00000', align: 'right' } })));
+        const otherRows = otherItemsResults.map(item => {
+            const isCost = item.type === 'cost';
+            return [{ text: item.name, options: { bold: true, align: 'left', fontSize: 9 } }].concat(item.values.map(v => ({ text: tableNumFormat(isCost ? -v : v), options: { fontSize: 9, color: isCost ? 'C00000' : '008000', align: 'right' } })));
+        });
+        const cashFlowRow = [{ text: 'Flujo de Caja', options: { bold: true, align: 'left', fontSize: 9, border: thickBorder } }].concat(cashFlows.map(v => ({ text: tableNumFormat(v), options: { bold: true, fontSize: 9, color: v >= 0 ? '008000' : 'C00000', align: 'right', border: thickBorder } })));
+        const cumulativeRow = [{ text: 'Flujo Acumulado', options: { bold: true, align: 'left', color: '003366', fontSize: 9 } }].concat(cumulativeCashFlows.map(v => ({ text: tableNumFormat(v), options: { bold: true, color: v >= 0 ? '003366' : 'C00000', fontSize: 9, align: 'right' } })));
+        const numYears = labels.length;
+        const firstColWidth = 1.5;
+        const yearColWidth = (rightColW - firstColWidth) / numYears;
+        slide.addTable([headerRow, benefitRow, subscriptionRow, implementationRow, ...otherRows, cashFlowRow, cumulativeRow], { x: rightColX, y: cashFlowTableY + 0.4, w: rightColW, colW: [firstColWidth, ...Array(numYears).fill(yearColWidth)], rowH: 0.25, border: { pt: 0.5, color: 'E0E0E0' }, valign: 'middle' });
+        pptx.writeFile({ fileName });
+    };
+
+    const populateVersionSelectors = () => {
+        versionSelector.innerHTML = '';
+        versionSwitcher.innerHTML = '';
+        if (!loadedFileData || loadedFileData.versions.length <= 1) { versionSwitcher.style.display = 'none'; return; }
+        loadedFileData.versions.forEach((version, index) => {
+            const date = new Date(version.timestamp).toLocaleString('es-MX');
+            const modalOption = document.createElement('option');
+            modalOption.value = index;
+            modalOption.textContent = `${version.versionName} (Guardado: ${date})`;
+            versionSelector.appendChild(modalOption);
+            const switcherOption = document.createElement('option');
+            let displayName = version.versionName;
+            if (displayName.length > 35) displayName = displayName.substring(0, 32) + '...';
+            switcherOption.value = index;
+            switcherOption.textContent = displayName;
+            versionSwitcher.appendChild(switcherOption);
+        });
+        versionSwitcher.style.display = 'inline-block';
+    };
+
+    const processLoadedData = (jsonString, fileName) => {
+        try {
+            let data = JSON.parse(jsonString);
+            if (!data.versions || !Array.isArray(data.versions)) {
+                data = { clientName: data.clientName || 'Importado', fileVersion: '2.0', versions: [{ versionName: 'Versión importada', timestamp: new Date().toISOString(), data: data }] };
+            }
+            loadedFileData = data;
+            if (fileName) currentFileName = fileName;
+            populateVersionSelectors();
+            if (loadedFileData.versions.length > 1) openVersionModal.style.display = 'flex';
+            else if (loadedFileData.versions.length === 1) loadVersion(0);
+            else { alert('El archivo no contiene ninguna versión válida.'); resetState(); }
+        } catch (error) { alert("El archivo seleccionado no es válido o está corrupto."); resetState(); }
+    };
+
+    const saveFile = async (dataToSave, suggestedName) => {
+        const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
+        if (currentFileHandle && window.isSecureContext) {
+            try { const writable = await currentFileHandle.createWritable(); await writable.write(blob); await writable.close(); return; }
+            catch (err) { currentFileHandle = null; }
+        }
+        if (window.showSaveFilePicker && window.isSecureContext) {
+            try {
+                const handle = await window.showSaveFilePicker({ suggestedName, types: [{ description: 'Archivos JSON', accept: { 'application/json': ['.json'] } }] });
+                currentFileHandle = handle;
+                const writable = await handle.createWritable();
+                await writable.write(blob); await writable.close();
+            } catch (err) { if (err.name !== 'AbortError') { triggerDownload(dataToSave, suggestedName); } }
+        } else { triggerDownload(dataToSave, suggestedName); }
+    };
+
+    const triggerDownload = (dataToSave, fileName) => {
+        const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleSaveClick = async () => {
+        const clientName = document.getElementById('clientName').value.trim();
+        if (!clientName) { alert("Por favor, ingresa un nombre de cliente antes de guardar."); document.getElementById('clientName').focus(); return; }
+        if (loadedFileData) {
+            overwriteVersionBtn.textContent = `Sobreescribir "${loadedFileData.versions[currentVersionIndex].versionName}"`;
+            newVersionNameInput.value = '';
+            saveOptionsModal.style.display = 'flex';
+        } else { firstVersionNameInput.value = ''; firstSaveModal.style.display = 'flex'; }
+    };
+
+    const handleOpenFile = async () => {
+        if (window.showOpenFilePicker && window.isSecureContext) {
+            try {
+                const [handle] = await window.showOpenFilePicker({ types: [{ description: 'Archivos JSON', accept: { 'application/json': ['.json'] } }], multiple: false });
+                currentFileHandle = handle;
+                const file = await handle.getFile();
+                processLoadedData(await file.text(), file.name);
+            } catch (err) { if (err.name !== 'AbortError') fileInput.click(); }
+        } else { fileInput.click(); }
+    };
+
+    const loadVersion = (index) => {
+        if (!loadedFileData || !loadedFileData.versions[index]) return;
+        currentVersionIndex = parseInt(index);
+        const version = loadedFileData.versions[currentVersionIndex];
+        document.getElementById('clientName').value = loadedFileData.clientName || '';
+        populateFormWithData(version.data);
+        updateTitlesWithCurrency();
+        const headerTitle = document.querySelector('.calc-toolbar .header-title');
+        if (headerTitle) headerTitle.textContent = `Ingreso de información: ${loadedFileData.clientName}`;
+        versionSwitcher.value = index;
+        openVersionModal.style.display = 'none';
+        if (shouldAutoCalculateOnLoad) {
+            performCalculations();
+            shouldAutoCalculateOnLoad = false;
+            if (typeof window.app.switchTab === 'function') {
+                window.app.switchTab('dashboardView');
+                if (resultsChart) setTimeout(() => resultsChart.resize(), 10);
+            }
+        }
+    };
+
+    const populateFormWithData = (data) => {
+        currencyEl.value = data.currency || 'USD';
+        document.getElementById('contractYears').value = data.contractYears || 5;
+        document.getElementById('numberOfEmployees').value = data.numberOfEmployees || '';
+        document.getElementById('annualBenefit').value = data.annualBenefit || '';
+        otherItemsData = data.otherItems || [];
+        generateYearlyFields();
+        const years = data.contractYears || 0;
+        for (let i = 1; i <= years; i++) {
+            const adoptionInput = adoptionContainer.querySelector(`[data-year="${i}"]`);
+            const subscriptionInput = subscriptionContainer.querySelector(`[data-year="${i}"]`);
+            const implementationInput = implementationContainer.querySelector(`[data-year="${i}"]`);
+            if (adoptionInput && data.adoptionCurve && data.adoptionCurve[i-1]) adoptionInput.value = data.adoptionCurve[i-1];
+            if (subscriptionInput && data.subscriptionCosts && data.subscriptionCosts[i-1]) subscriptionInput.value = data.subscriptionCosts[i-1];
+            if (implementationInput && data.implementationCosts && data.implementationCosts[i-1]) implementationInput.value = data.implementationCosts[i-1];
+        }
+        document.querySelectorAll('#calculadora-container .numeric-currency, #calculadora-container .numeric-percent').forEach(input => {
+            if (input.value) input.dispatchEvent(new Event('blur'));
+        });
+    };
+
+    const showNpvPopover = () => {
+        if (!lastCalculationResults) return;
+        clearTimeout(npvPopoverHideTimeout);
+        const discountRate = getConfigDiscountRate();
+        const years = parseInt(yearsInput.value) || 0;
+        const adoptionCurve = Array.from({length: years}, (_, i) => parseNumericValue(adoptionContainer.querySelector(`[data-year="${i+1}"]`)?.value) / 100);
+        const subscriptionCosts = Array.from({length: years}, (_, i) => parseNumericValue(subscriptionContainer.querySelector(`[data-year="${i+1}"]`)?.value));
+        const implementationCosts = Array.from({length: years}, (_, i) => parseNumericValue(implementationContainer.querySelector(`[data-year="${i+1}"]`)?.value));
+        const currentAnnualBenefit = parseNumericValue(document.getElementById('annualBenefit').value);
+        let pvCosts = 0, pvAdoptionFactor = 0;
+        for (let i = 0; i < years; i++) {
+            const discountFactor = Math.pow(1 + discountRate, i + 1);
+            pvCosts += (subscriptionCosts[i] + implementationCosts[i]) / discountFactor;
+            pvAdoptionFactor += adoptionCurve[i] / discountFactor;
+        }
+        if (pvAdoptionFactor <= 0) return;
+        const requiredBenefit = pvCosts / pvAdoptionFactor;
+        const difference = requiredBenefit - currentAnnualBenefit;
+        const { locale } = getCurrencyMap()[currencyEl.value] || { locale: 'en-US' };
+        const currencyCode = currencyEl.value;
+        const currencyFormatter = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode });
+        requiredBenefitValueEl.textContent = `${currencyFormatter.format(requiredBenefit)} ${currencyCode}`;
+        if (Math.abs(difference) < 0.01) benefitDifferenceTextEl.textContent = 'El beneficio actual ya resulta en un VPN de cero (o muy cercano).';
+        else if (difference > 0) benefitDifferenceTextEl.innerHTML = `Esto es <strong class="positive-text">${currencyFormatter.format(difference)} ${currencyCode}</strong> más que el beneficio actual.`;
+        else benefitDifferenceTextEl.innerHTML = `Esto es <strong class="negative-text">${currencyFormatter.format(Math.abs(difference))} ${currencyCode}</strong> menos que el beneficio actual.`;
+        const triggerRect = vpnMetricBox.getBoundingClientRect();
+        npvAnalysisPopover.style.display = 'block';
+        const popoverHeight = npvAnalysisPopover.offsetHeight;
+        npvAnalysisPopover.style.left = `${triggerRect.left}px`;
+        npvAnalysisPopover.style.top = `${triggerRect.top + window.scrollY - popoverHeight - 5}px`;
+    };
+    const hideNpvPopover = () => { npvPopoverHideTimeout = setTimeout(() => { npvAnalysisPopover.style.display = 'none'; }, 300); };
+
+    const showMetricTooltip = (event) => {
+        const icon = event.target;
+        const tooltipText = icon.getAttribute('data-tooltip');
+        if (!tooltipText) return;
+        clearTimeout(metricTooltipHideTimeout);
+        metricTooltipPopover.innerHTML = tooltipText;
+        metricTooltipPopover.style.display = 'block';
+        const popoverHeight = metricTooltipPopover.offsetHeight;
+        const popoverWidth = metricTooltipPopover.offsetWidth;
+        const iconRect = icon.getBoundingClientRect();
+        let left = iconRect.left + (iconRect.width / 2) - (popoverWidth / 2);
+        let top = iconRect.top + window.scrollY - popoverHeight - 8;
+        if (left < 10) left = 10;
+        if ((left + popoverWidth) > window.innerWidth) left = window.innerWidth - popoverWidth - 10;
+        metricTooltipPopover.style.left = `${left}px`;
+        metricTooltipPopover.style.top = `${top}px`;
+    };
+    const hideMetricTooltip = () => { metricTooltipHideTimeout = setTimeout(() => { metricTooltipPopover.style.display = 'none'; }, 200); };
+
+    // --- Event Listeners ---
+    const validateInputsForCalculation = () => {
+        const years = parseInt(yearsInput.value) || 0;
+        const errors = [];
+
+        // Datos generales
+        const clientOk = document.getElementById('clientName').value.trim() !== '';
+        const empOk = document.getElementById('numberOfEmployees').value.trim() !== '';
+        const scenarioOk = document.getElementById('scenario-selector').value !== '';
+        const errDatos = document.getElementById('err-datos-generales');
+        if (!clientOk || !empOk || !scenarioOk) {
+            errors.push('Faltan campos obligatorios en Datos generales.');
+            if (errDatos) errDatos.style.display = 'block';
+        } else {
+            if (errDatos) errDatos.style.display = 'none';
+        }
+
+        // Costos de suscripción
+        let subError = false;
+        for (let i = 1; i <= years; i++) {
+            const subInput = subscriptionContainer.querySelector(`[data-year="${i}"]`);
+            const val = parseNumericValue(subInput?.value || '');
+            if (!subInput || isNaN(val) || val <= 0) {
+                subError = true;
+                errors.push(`Año ${i} de Costos de suscripción está vacío o es cero.`);
+            }
+        }
+        const errSub = document.getElementById('err-subscription');
+        if (errSub) errSub.style.display = subError ? 'block' : 'none';
+
+        // Costos de implementación
+        const impl1 = implementationContainer.querySelector('[data-year="1"]');
+        const impl1Val = parseNumericValue(impl1?.value || '');
+        const implError = !impl1 || isNaN(impl1Val) || impl1Val <= 0;
+        if (implError) errors.push('El campo Año 1 de Costos de implementación es obligatorio.');
+        const errImpl = document.getElementById('err-implementation');
+        if (errImpl) errImpl.style.display = implError ? 'block' : 'none';
+
+        // Curva de adopción
+        let adoptError = false;
+        for (let i = 1; i <= years; i++) {
+            const adoptInput = adoptionContainer.querySelector(`[data-year="${i}"]`);
+            const val = parseNumericValue(adoptInput?.value || '');
+            if (!adoptInput || isNaN(val)) {
+                adoptError = true;
+            }
+        }
+        const errAdopt = document.getElementById('err-adoption');
+        if (errAdopt) errAdopt.style.display = adoptError ? 'block' : 'none';
+        if (adoptError) errors.push('Ingresa la curva de adopción para cada año.');
+
+        return errors;
+    };
+
+    calculateBtn.addEventListener('click', () => {
+        const selectedVersion = versionSwitcher.value;
+        if (loadedFileData && selectedVersion != currentVersionIndex) {
+            versionChangeConfirmModal.style.display = 'flex';
+        } else {
+            const validationErrors = validateInputsForCalculation();
+            if (validationErrors.length > 0) {
+                alert('Por favor completa los campos obligatorios antes de calcular:\n\n• ' + validationErrors.join('\n• '));
+                return;
+            }
+            performCalculations();
+            if (typeof window.app.switchTab === 'function') {
+                window.app.switchTab('dashboardView');
+                if (resultsChart) setTimeout(() => resultsChart.resize(), 10);
+            }
+        }
+    });
+    addOtherItemBtn.addEventListener('click', window.addOtherItem);
+    yearsInput.addEventListener('input', generateYearlyFields);
+    currencyEl.addEventListener('change', () => {
+        updateTitlesWithCurrency();
+        if (typeof window.app.calculateAllLevers === 'function') window.app.calculateAllLevers();
+    });
+    newBtn.addEventListener('click', () => { resetModal.style.display = 'flex'; });
+    cancelResetBtn.addEventListener('click', () => { resetModal.style.display = 'none'; });
+    confirmResetBtn.addEventListener('click', resetForm);
+    saveBtn.addEventListener('click', handleSaveClick);
+    exportPptxBtn.addEventListener('click', exportToPptx);
+    const renderDefaultAdoptionInputs = () => {
+        const container = document.getElementById('default-adoption-config-inputs');
+        if (!container) return;
+        const years = parseInt(document.getElementById('defaultAdoptionYearsConfig').value) || 3;
+        const stored = JSON.parse(localStorage.getItem('defaultAdoptionCurve') || '{}');
+        container.innerHTML = '';
+        for (let i = 1; i <= years; i++) {
+            const div = document.createElement('div');
+            div.className = 'yearly-input-group';
+            div.innerHTML = `<label>Año ${i}</label><input type="text" class="numeric-percent" data-year="${i}" placeholder="0.0" value="${stored[i] || ''}" style="max-width:90px;">`;
+            container.appendChild(div);
+        }
+    };
+
+    document.getElementById('updateDefaultAdoptionBtn').addEventListener('click', renderDefaultAdoptionInputs);
+
+    document.getElementById('saveConfigParamsBtn').addEventListener('click', () => {
+        const rate = document.getElementById('configDiscountRate').value.trim();
+        localStorage.setItem('configDiscountRate', rate);
+        const defaultYears = parseInt(document.getElementById('defaultAdoptionYearsConfig').value) || 3;
+        const defaultAdoption = {};
+        document.querySelectorAll('#default-adoption-config-inputs [data-year]').forEach(inp => {
+            defaultAdoption[inp.dataset.year] = inp.value;
+        });
+        localStorage.setItem('defaultAdoptionCurve', JSON.stringify(defaultAdoption));
+        localStorage.setItem('defaultAdoptionYears', String(defaultYears));
+        alert('Parámetros guardados.');
+    });
+
+    document.getElementById('addCurrencyBtn').addEventListener('click', () => {
+        const code = document.getElementById('newCurrencyCode').value.trim().toUpperCase();
+        const label = document.getElementById('newCurrencyLabel').value.trim();
+        const symbol = document.getElementById('newCurrencySymbol').value.trim();
+        const locale = document.getElementById('newCurrencyLocale').value.trim() || 'en-US';
+        if (!code || !label || !symbol) { alert('Código, nombre y símbolo son obligatorios.'); return; }
+        const currencies = getCurrencyConfig();
+        if (currencies.some(c => c.value === code)) { alert(`El código "${code}" ya existe.`); return; }
+        currencies.push({ value: code, label, symbol, locale });
+        saveCurrencyConfig(currencies);
+        renderCurrenciesList();
+        updateCurrencyDropdown();
+        document.getElementById('newCurrencyCode').value = '';
+        document.getElementById('newCurrencyLabel').value = '';
+        document.getElementById('newCurrencySymbol').value = '';
+        document.getElementById('newCurrencyLocale').value = '';
+    });
+
+    document.getElementById('currencies-list').addEventListener('click', (e) => {
+        if (e.target.classList.contains('currency-delete-btn')) {
+            const idx = parseInt(e.target.dataset.index);
+            const currencies = getCurrencyConfig();
+            if (currencies.length <= 1) { alert('Debe haber al menos una moneda disponible.'); return; }
+            currencies.splice(idx, 1);
+            saveCurrencyConfig(currencies);
+            renderCurrenciesList();
+            updateCurrencyDropdown();
+        }
+        if (e.target.classList.contains('currency-edit-btn')) {
+            const idx = parseInt(e.target.dataset.index);
+            const currencies = getCurrencyConfig();
+            const c = currencies[idx];
+            const row = e.target.closest('div');
+            row.innerHTML = `
+              <span style="color:#888; font-size:0.8rem; min-width:50px; font-weight:600;">${c.value}</span>
+              <input class="cur-edit-label" placeholder="Nombre" value="${c.label}" style="flex:2; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem;">
+              <input class="cur-edit-symbol" placeholder="Símbolo" value="${c.symbol}" style="width:60px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem;">
+              <input class="cur-edit-locale" placeholder="Locale" value="${c.locale}" style="width:100px; padding:4px 6px; border:1px solid #ccc; border-radius:4px; font-size:0.85rem;">
+              <button class="success currency-save-edit-btn" data-index="${idx}" style="padding:4px 10px; font-size:0.8rem; white-space:nowrap;">Guardar</button>
+              <button class="secondary currency-cancel-edit-btn" style="padding:4px 10px; font-size:0.8rem;">Cancelar</button>`;
+        }
+        if (e.target.classList.contains('currency-save-edit-btn')) {
+            const idx = parseInt(e.target.dataset.index);
+            const row = e.target.closest('div');
+            const label = row.querySelector('.cur-edit-label').value.trim();
+            const symbol = row.querySelector('.cur-edit-symbol').value.trim();
+            const locale = row.querySelector('.cur-edit-locale').value.trim();
+            if (!label || !symbol) { alert('Nombre y símbolo son obligatorios.'); return; }
+            const currencies = getCurrencyConfig();
+            currencies[idx] = { ...currencies[idx], label, symbol, locale: locale || 'en-US' };
+            saveCurrencyConfig(currencies);
+            renderCurrenciesList();
+            updateCurrencyDropdown();
+        }
+        if (e.target.classList.contains('currency-cancel-edit-btn')) {
+            renderCurrenciesList();
+        }
+    });
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => processLoadedData(e.target.result, file.name);
+        reader.readAsText(file);
+        event.target.value = null;
+    });
+    openBtn.addEventListener('click', () => {
+        if (hasData()) { shouldAutoCalculateOnLoad = false; openConfirmModal.style.display = 'flex'; }
+        else { shouldAutoCalculateOnLoad = true; handleOpenFile(); }
+    });
+    cancelOpenBtn.addEventListener('click', () => { openConfirmModal.style.display = 'none'; });
+    confirmOpenBtn.addEventListener('click', () => { shouldAutoCalculateOnLoad = false; openConfirmModal.style.display = 'none'; handleOpenFile(); });
+    cancelFirstSaveBtn.addEventListener('click', () => { firstSaveModal.style.display = 'none'; });
+    confirmFirstSaveBtn.addEventListener('click', async () => {
+        const clientName = document.getElementById('clientName').value.trim();
+        const newVersionName = firstVersionNameInput.value.trim();
+        if (!newVersionName) { alert('Por favor, ingresa un nombre para la versión.'); return; }
+        const newFileData = { clientName, fileVersion: '2.0', versions: [{ versionName: newVersionName, timestamp: new Date().toISOString(), data: getCurrentFormData() }] };
+        loadedFileData = newFileData; currentVersionIndex = 0;
+        currentFileName = `${clientName.trim().replace(/\s+/g, '_')}_calculo_financiero.json`;
+        const headerTitle = document.querySelector('.calc-toolbar .header-title');
+        if (headerTitle) headerTitle.textContent = `Ingreso de información: ${clientName}`;
+        firstSaveModal.style.display = 'none';
+        await saveFile(loadedFileData, currentFileName);
+    });
+    cancelSaveBtn.addEventListener('click', () => { saveOptionsModal.style.display = 'none'; });
+    overwriteVersionBtn.addEventListener('click', async () => {
+        const clientName = document.getElementById('clientName').value.trim();
+        const currentVersion = loadedFileData.versions[currentVersionIndex];
+        currentVersion.data = getCurrentFormData(); currentVersion.timestamp = new Date().toISOString();
+        loadedFileData.clientName = clientName;
+        const headerTitle = document.querySelector('.calc-toolbar .header-title');
+        if (headerTitle) headerTitle.textContent = `Ingreso de información: ${clientName}`;
+        await saveFile(loadedFileData, currentFileName);
+        saveOptionsModal.style.display = 'none';
+    });
+    saveAsNewVersionBtn.addEventListener('click', async () => {
+        const clientName = document.getElementById('clientName').value.trim();
+        const newVersionName = newVersionNameInput.value.trim();
+        if (!newVersionName) { alert('Por favor, ingresa un nombre para la nueva versión.'); return; }
+        const newVersion = { versionName: newVersionName, timestamp: new Date().toISOString(), data: getCurrentFormData() };
+        loadedFileData.versions.push(newVersion); currentVersionIndex = loadedFileData.versions.length - 1;
+        loadedFileData.clientName = clientName;
+        const headerTitle = document.querySelector('.calc-toolbar .header-title');
+        if (headerTitle) headerTitle.textContent = `Ingreso de información: ${clientName}`;
+        populateVersionSelectors(); versionSwitcher.value = currentVersionIndex;
+        await saveFile(loadedFileData, currentFileName);
+        saveOptionsModal.style.display = 'none';
+    });
+    cancelLoadVersionBtn.addEventListener('click', () => { openVersionModal.style.display = 'none'; resetState(); });
+    confirmLoadVersionBtn.addEventListener('click', () => { loadVersion(versionSelector.value); });
+    cancelVersionChangeBtn.addEventListener('click', () => { versionChangeConfirmModal.style.display = 'none'; versionSwitcher.value = currentVersionIndex; });
+    confirmVersionChangeBtn.addEventListener('click', () => {
+        versionChangeConfirmModal.style.display = 'none';
+        loadVersion(versionSwitcher.value);
+        performCalculations();
+        if (typeof window.app.switchTab === 'function') {
+            window.app.switchTab('dashboardView');
+            if (resultsChart) setTimeout(() => resultsChart.resize(), 10);
+        }
+    });
+    vpnMetricBox.addEventListener('mouseenter', showNpvPopover);
+    vpnMetricBox.addEventListener('mouseleave', hideNpvPopover);
+    npvAnalysisPopover.addEventListener('mouseenter', () => clearTimeout(npvPopoverHideTimeout));
+    npvAnalysisPopover.addEventListener('mouseleave', () => { npvAnalysisPopover.style.display = 'none'; });
+    document.querySelectorAll('.info-icon').forEach(icon => {
+        icon.addEventListener('mouseenter', showMetricTooltip);
+        icon.addEventListener('mouseleave', hideMetricTooltip);
+    });
+    window.addEventListener('beforeunload', (e) => { if (hasData()) { e.preventDefault(); e.returnValue = ''; } });
+
+    // --- Inicialización ---
+    loadConfigParams();
+    generateYearlyFields();
+    updateTitlesWithCurrency();
+
+    // Exponer funciones para comunicación directa con el bloque de palancas
+    window.app.updateDashboardBenefit = (value) => {
+        const annualBenefitInput = document.getElementById('annualBenefit');
+        if (annualBenefitInput) {
+            annualBenefitInput.value = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+            performCalculations();
+        }
+    };
+
+    window.app.renderDashboardModules = (modules, selectedIds) => {
+        const container = document.getElementById('dashboardModulesContainer');
+        const modulesCard = document.getElementById('modules-card');
+        if (!container || !modulesCard) return;
+        if (!modules || modules.length === 0) { modulesCard.style.display = 'none'; return; }
+        modulesCard.style.display = 'block';
+        container.innerHTML = '';
+        modules.forEach(module => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #f0f0f0';
+
+            const tdName = document.createElement('td');
+            tdName.style.cssText = 'padding:6px 8px;';
+            tdName.textContent = module.name;
+
+            const tdCheck = document.createElement('td');
+            tdCheck.style.cssText = 'text-align:center; padding:6px 8px;';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = module.id;
+            cb.className = 'dashboard-module-checkbox';
+            cb.style.cssText = 'margin:0; cursor:pointer;';
+            cb.checked = selectedIds ? selectedIds.includes(module.id) : true;
+            cb.addEventListener('change', () => {
+                const newSelectedIds = Array.from(container.querySelectorAll('.dashboard-module-checkbox'))
+                    .filter(c => c.checked).map(c => c.value);
+                if (typeof window.app.onDashboardModulesChanged === 'function') {
+                    window.app.onDashboardModulesChanged(newSelectedIds);
+                }
+            });
+            tdCheck.appendChild(cb);
+
+            const tdBenefit = document.createElement('td');
+            tdBenefit.id = `module-benefit-${module.id}`;
+            tdBenefit.style.cssText = 'text-align:right; padding:6px 8px; color:#555;';
+            tdBenefit.textContent = '-';
+
+            tr.appendChild(tdName);
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdBenefit);
+            container.appendChild(tr);
+        });
+    };
+
+    window.app.updateModuleBenefits = (benefitMap, hasSharedLevers) => {
+        let totalInScope = 0;
+        Object.entries(benefitMap).forEach(([moduleId, info]) => {
+            const cell = document.getElementById(`module-benefit-${moduleId}`);
+            const cb = document.querySelector(`.dashboard-module-checkbox[value="${moduleId}"]`);
+            if (!cell) return;
+            const inScope = !cb || cb.checked;
+            if (inScope) {
+                const label = info.hasShared
+                    ? `${formatCurrencyThousands(info.total)}k *`
+                    : `${formatCurrencyThousands(info.total)}k`;
+                cell.textContent = label;
+                totalInScope += info.total;
+            } else {
+                cell.textContent = '-';
+            }
+        });
+        const totalEl = document.getElementById('modules-total-benefit');
+        if (totalEl) totalEl.textContent = `${formatCurrencyThousands(totalInScope)}k`;
+        const noteEl = document.getElementById('modules-shared-note');
+        if (noteEl) noteEl.style.display = hasSharedLevers ? 'block' : 'none';
+    };
+
+    // Sincronizar con el bloque de palancas una vez que todo está listo
+    if (typeof window.app.syncDashboard === 'function') {
+        window.app.syncDashboard();
+    }
+});
+</script>
+
+</body>
+</html>
