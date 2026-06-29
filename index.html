@@ -976,6 +976,18 @@
         </div>
     </div>
 
+    <div id="startup-update-modal" class="modal-overlay" style="z-index: 2999;">
+        <div class="modal-content" style="max-width: 520px; text-align: left;">
+            <h3 style="color: #003366; margin-bottom: 12px;">Actualizacion requerida</h3>
+            <p style="font-size: 0.95rem; color: #444; margin-bottom: 10px;">Antes de usar la calculadora debes actualizar la configuracion oficial desde GitHub.</p>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 18px;">Esto equivale a hacer un git pull de las palancas y modulos publicados.</p>
+            <div id="startup-update-status" style="font-size: 0.9rem; min-height: 20px; margin-bottom: 14px;"></div>
+            <div class="modal-buttons" style="justify-content: flex-end;">
+                <button id="startup-update-btn" style="background: #0056b3; color: white; border: none;">Actualizar ahora</button>
+            </div>
+        </div>
+    </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const GH_CONFIG = window.CONFIG_GITHUB || {};
@@ -996,6 +1008,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncStatusTitle = document.getElementById('sync-status-title');
     const syncStatusMessage = document.getElementById('sync-status-message');
     const syncStatusCloseBtn = document.getElementById('sync-status-close-btn');
+    const startupUpdateModal = document.getElementById('startup-update-modal');
+    const startupUpdateBtn = document.getElementById('startup-update-btn');
+    const startupUpdateStatus = document.getElementById('startup-update-status');
 
     const showSyncStatus = (title, message, type = 'info') => {
         const colors = { success: '#1a8a52', error: '#dc3545', info: '#003366' };
@@ -1160,9 +1175,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const executeDownload = async (token) => {
+    const executeDownload = async (token, options = {}) => {
         const originalText = updateConfigBtn.innerHTML;
-        if (updateConfigBtn.style.display !== 'none') {
+        const isStartupUpdate = options.source === 'startup';
+
+        if (isStartupUpdate) {
+            startupUpdateStatus.innerHTML = '<span style="color:#555">Descargando configuracion oficial...</span>';
+            startupUpdateBtn.disabled = true;
+        } else if (updateConfigBtn.style.display !== 'none') {
             updateConfigBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">download</span> Descargando...';
             updateConfigBtn.disabled = true;
         }
@@ -1177,11 +1197,21 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('softwareModules', JSON.stringify(safeModules));
             if (window.remoteConfigVersion) localStorage.setItem(LOCAL_VERSION_KEY, window.remoteConfigVersion);
 
-            alert('¡Las palancas se han actualizado con la versión oficial! La página se recargará.');
+            if (isStartupUpdate) {
+                sessionStorage.setItem('startupGitPullDone', 'true');
+                startupUpdateStatus.innerHTML = '<span style="color:#1a8a52">Actualizacion lista. Recargando...</span>';
+            } else {
+                alert('¡Las palancas se han actualizado con la versión oficial! La página se recargará.');
+            }
             location.reload();
         } catch (e) {
-            alert('Error al descargar: ' + e.message);
-            if (updateConfigBtn.style.display !== 'none') {
+            if (isStartupUpdate) {
+                startupUpdateStatus.innerHTML = `<span style="color:#dc3545">No se pudo actualizar: ${e.message}</span>`;
+                startupUpdateBtn.disabled = false;
+            } else {
+                alert('Error al descargar: ' + e.message);
+            }
+            if (!isStartupUpdate && updateConfigBtn.style.display !== 'none') {
                 updateConfigBtn.innerHTML = originalText;
                 updateConfigBtn.disabled = false;
             }
@@ -1190,6 +1220,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateConfigBtn.addEventListener('click', () => { executeWithAuth(executeDownload); });
     if (forceUpdateBtn) forceUpdateBtn.addEventListener('click', () => { executeWithAuth(executeDownload); });
+    startupUpdateBtn.addEventListener('click', () => {
+        executeWithAuth((token) => executeDownload(token, { source: 'startup' }));
+    });
 
     async function checkForConfigUpdate() {
         const token = localStorage.getItem(GH_TOKEN_KEY);
@@ -2080,6 +2113,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app.switchTab = switchTab;
     renderAllTabs();
     resetConfigForm();
+    if (sessionStorage.getItem('startupGitPullDone') !== 'true') {
+        startupUpdateModal.style.display = 'flex';
+    }
 });
 
 // ===== JAVASCRIPT DE INDICADORES FINANCIEROS =====
