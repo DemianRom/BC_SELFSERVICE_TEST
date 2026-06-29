@@ -972,6 +972,16 @@
         </div>
     </div>
 
+    <div id="sync-status-modal" class="modal-overlay" style="z-index: 3001;">
+        <div class="modal-content" style="max-width: 460px; text-align: left;">
+            <h3 id="sync-status-title" style="color: #003366; margin-bottom: 12px;">Estado de sincronizacion</h3>
+            <p id="sync-status-message" style="font-size: 0.95rem; color: #444; margin-bottom: 18px;"></p>
+            <div class="modal-buttons" style="justify-content: flex-end;">
+                <button id="sync-status-close-btn" style="background: #0056b3; color: white; border: none;">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const GH_CONFIG = window.CONFIG_GITHUB || {};
@@ -988,6 +998,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const tokenStatus = document.getElementById('token-status');
     let tokenSaveBtn = document.getElementById('token-save-btn');
     const tokenCancelBtn = document.getElementById('token-cancel-btn');
+    const syncStatusModal = document.getElementById('sync-status-modal');
+    const syncStatusTitle = document.getElementById('sync-status-title');
+    const syncStatusMessage = document.getElementById('sync-status-message');
+    const syncStatusCloseBtn = document.getElementById('sync-status-close-btn');
+
+    const showSyncStatus = (title, message, type = 'info') => {
+        const colors = { success: '#1a8a52', error: '#dc3545', info: '#003366' };
+        syncStatusTitle.textContent = title;
+        syncStatusTitle.style.color = colors[type] || colors.info;
+        syncStatusMessage.textContent = message;
+        syncStatusModal.style.display = 'flex';
+    };
+
+    syncStatusCloseBtn.addEventListener('click', () => {
+        syncStatusModal.style.display = 'none';
+    });
 
     const executeWithAuth = (actionCallback) => {
         const token = localStorage.getItem(GH_TOKEN_KEY);
@@ -1004,16 +1030,34 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenSaveBtn.replaceWith(newSaveBtn);
         tokenSaveBtn = newSaveBtn;
 
-        tokenSaveBtn.addEventListener('click', () => {
+        tokenSaveBtn.addEventListener('click', async () => {
             const valToken = tokenInput.value.trim();
             if (!valToken) {
                 tokenStatus.innerHTML = '<span style="color:#dc3545">Ingresa tu token de GitHub.</span>';
                 return;
             }
 
-            localStorage.setItem(GH_TOKEN_KEY, valToken);
-            tokenModal.style.display = 'none';
-            actionCallback(valToken);
+            tokenStatus.innerHTML = '<span style="color:#555">Validando token...</span>';
+            tokenSaveBtn.disabled = true;
+
+            try {
+                await validateGitHubToken(valToken);
+                localStorage.setItem(GH_TOKEN_KEY, valToken);
+                tokenModal.style.display = 'none';
+                showSyncStatus('Token aceptado', `Conexion exitosa con ${GH_CONFIG.REPO}. El token tiene permiso de escritura.`, 'success');
+                actionCallback(valToken);
+            } catch (err) {
+                localStorage.removeItem(GH_TOKEN_KEY);
+                const message = err.message === 'TOKEN_NO_WRITE'
+                    ? `El token se pudo autenticar, pero no tiene permiso de escritura sobre ${GH_CONFIG.REPO}. Revisa que tenga Contents: Read and write.`
+                    : err.message === 'TOKEN_INVALID'
+                        ? 'El token no fue aceptado por GitHub. Verifica que este completo, vigente y asociado al repositorio correcto.'
+                        : 'No se pudo validar el token: ' + err.message;
+                tokenStatus.innerHTML = '<span style="color:#dc3545">Token no aceptado.</span>';
+                showSyncStatus('Token no aceptado', message, 'error');
+            } finally {
+                tokenSaveBtn.disabled = false;
+            }
         });
     };
 
@@ -1030,6 +1074,21 @@ document.addEventListener('DOMContentLoaded', () => {
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
     });
+
+    const validateGitHubToken = async (token) => {
+        const res = await fetch(`${GH_API_BASE}/repos/${GH_CONFIG.REPO}`, { headers: ghHeaders(token) });
+        if (res.status === 401 || res.status === 403 || res.status === 404) {
+            throw new Error('TOKEN_INVALID');
+        }
+        if (!res.ok) throw new Error(`Error de conexion con GitHub (${res.status})`);
+
+        const repoInfo = await res.json();
+        const permissions = repoInfo.permissions || {};
+        if (!permissions.push && !permissions.maintain && !permissions.admin) {
+            throw new Error('TOKEN_NO_WRITE');
+        }
+        return repoInfo;
+    };
 
     const getFileInfo = async (token, filename) => {
         const res = await fetch(`${GH_API_BASE}/repos/${GH_CONFIG.REPO}/contents/${filename}`, { headers: ghHeaders(token) });
