@@ -991,6 +991,7 @@
             <div id="startup-update-status" style="font-size: 0.9rem; min-height: 20px; margin-bottom: 14px;"></div>
             <div class="modal-buttons" style="justify-content: flex-end;">
                 <button id="startup-update-btn" style="background: #0056b3; color: white; border: none;">Actualizar ahora</button>
+                <button id="startup-continue-btn" style="display: none; background: #1a8a52; color: white; border: none;">Continuar</button>
             </div>
         </div>
     </div>
@@ -1018,6 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncStatusCloseBtn = document.getElementById('sync-status-close-btn');
     const startupUpdateModal = document.getElementById('startup-update-modal');
     const startupUpdateBtn = document.getElementById('startup-update-btn');
+    const startupContinueBtn = document.getElementById('startup-continue-btn');
     const startupUpdateStatus = document.getElementById('startup-update-status');
 
     const showSyncStatus = (title, message, type = 'info') => {
@@ -1220,6 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isStartupUpdate) {
             startupUpdateStatus.innerHTML = '<span style="color:#555">Descargando configuracion oficial...</span>';
             startupUpdateBtn.disabled = true;
+            startupContinueBtn.style.display = 'none';
         } else if (updateConfigBtn.style.display !== 'none') {
             updateConfigBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">download</span> Descargando...';
             updateConfigBtn.disabled = true;
@@ -1241,7 +1244,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 startupUpdateStatus.innerHTML = '<span style="color:#1a8a52">Actualizacion lista.</span>';
                 renderAllTabs();
                 resetConfigForm();
-                startupUpdateModal.style.display = 'none';
+                startupUpdateBtn.style.display = 'none';
+                startupContinueBtn.style.display = 'inline-block';
             } else {
                 alert('¡Las palancas se han actualizado con la versión oficial! La página se recargará.');
             }
@@ -1249,6 +1253,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isStartupUpdate) {
                 startupUpdateStatus.innerHTML = `<span style="color:#dc3545">No se pudo actualizar: ${e.message}</span>`;
                 startupUpdateBtn.disabled = false;
+                startupUpdateBtn.style.display = 'inline-block';
+                startupContinueBtn.style.display = 'none';
             } else {
                 alert('Error al descargar: ' + e.message);
             }
@@ -1263,6 +1269,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (forceUpdateBtn) forceUpdateBtn.addEventListener('click', () => { executeWithAuth(executeDownload); });
     startupUpdateBtn.addEventListener('click', () => {
         executeWithAuth((token) => executeDownload(token, { source: 'startup' }));
+    });
+    startupContinueBtn.addEventListener('click', () => {
+        startupUpdateModal.style.display = 'none';
     });
 
     async function checkForConfigUpdate() {
@@ -2155,6 +2164,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAllTabs();
     resetConfigForm();
     startupUpdateModal.style.display = 'flex';
+    startupUpdateBtn.style.display = 'inline-block';
+    startupUpdateBtn.disabled = true;
+    startupContinueBtn.style.display = 'none';
     startupUpdateStatus.innerHTML = '<span style="color:#555">Verificando token y actualizando configuracion...</span>';
     executeWithAuth((token) => executeDownload(token, { source: 'startup' }));
 });
