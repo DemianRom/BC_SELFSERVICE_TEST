@@ -1278,6 +1278,16 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert('¡Las palancas se han actualizado con la versión oficial! La página se recargará.');
             }
+            if (!isStartupUpdate) {
+                levers = safeLevers;
+                modules = safeModules;
+                renderAllTabs();
+                resetConfigForm();
+                updateConfigBtn.innerHTML = originalText;
+                updateConfigBtn.disabled = false;
+                updateConfigBtn.style.display = 'none';
+                showSyncStatus('Actualizacion lista', 'Las palancas se actualizaron con la version oficial.', 'success');
+            }
         } catch (e) {
             if (isStartupUpdate) {
                 startupUpdateStatus.innerHTML = `<span style="color:#dc3545">No se pudo actualizar: ${e.message}</span>`;
