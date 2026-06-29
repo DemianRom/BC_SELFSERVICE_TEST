@@ -35,11 +35,9 @@
     {
       "id": "1778621586594",
       "moduleIds": [
-        "1778618968872",
-        "1778715797687"
+        "1778618968872"
       ],
       "name": "Reducir el tiempo para ocupar posiciones vacantes",
-      "leverValueDescription": "",
       "questions": [
         {
           "id": "q1",
@@ -79,7 +77,6 @@
         "1778715797687"
       ],
       "name": "Reducir la rotación voluntaria de personal",
-      "leverValueDescription": "",
       "questions": [
         {
           "id": "q1",
@@ -93,7 +90,7 @@
         },
         {
           "id": "q3",
-          "text": "Costo de rotación de un colaborador",
+          "text": "Costo promedio de contratación de un colaborador",
           "type": "currency"
         }
       ],
@@ -102,269 +99,8 @@
       "kpiFormula": "q1",
       "kpiFormat": "percentage",
       "leverDescription": "Tasa de Rotación Voluntaria Anual",
-      "benefitMin": 2,
-      "benefitMax": 8,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780614573648",
-      "moduleIds": [
-        "1778715786536"
-      ],
-      "name": "Mejorar la focalización de la capacitación",
-      "leverValueDescription": "Enfocar mejor los esfuerzos para dar la capacitation enfocada en las necesidades específicas de cada colaborador, para mejorar sus habilidades y competencias y que esto se vea reflejado en mayor productividad para la organización ",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Número de empleados",
-          "type": "number"
-        },
-        {
-          "id": "q2",
-          "text": "Gasto de capacitación por empleado",
-          "type": "currency"
-        }
-      ],
-      "baseLineFormula": "q1*q2",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "number",
-      "leverDescription": "Gasto anual de capacitación por empleado",
-      "benefitMin": 5,
-      "benefitMax": 15,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780615016520",
-      "moduleIds": [
-        "1778715786536"
-      ],
-      "name": "Mejorar la efectividad de la capacitación",
-      "leverValueDescription": "Mejorar y reforzar los objetivos de capacitación usando aulas de capacitación, comunidades y academias para brindar soporte contextual y recursos de pares",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Número de empleados",
-          "type": "number"
-        },
-        {
-          "id": "q2",
-          "text": "Empleados que requieren Upskilling / Reskilling",
-          "type": "percentage"
-        },
-        {
-          "id": "q3",
-          "text": "Costo de Upskilling / Reskilling por empleado",
-          "type": "currency"
-        }
-      ],
-      "baseLineFormula": "q1*q2*q3",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "percentage",
-      "leverDescription": "Empleados que requieren Upskilling / Reskilling",
-      "benefitMin": 0.8,
-      "benefitMax": 2.5,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780615375947",
-      "moduleIds": [
-        "1778618968872",
-        "1778715797687"
-      ],
-      "name": "Reducir el costo de contratación",
-      "leverValueDescription": "Reducir el costo de contratación cubriendo roles con candidatos internos obtenidos a través de recomendaciones y flujos de trabajo internos optimizados en lugar de canales externos",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Número de nuevas contrataciones",
-          "type": "number"
-        },
-        {
-          "id": "q2",
-          "text": "Costo por contratación",
-          "type": "currency"
-        }
-      ],
-      "baseLineFormula": "q1*q2",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "percentage",
-      "leverDescription": "Costo por contratación",
-      "benefitMin": 10,
-      "benefitMax": 25,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780623669240",
-      "moduleIds": [
-        "1778715621919"
-      ],
-      "name": "Reducir el tiempo del Manager en la Gestión de Metas y Desempeño",
-      "leverValueDescription": "Los empleados pueden realizar un seguimiento del progreso y la finalización de sus objetivos, mientras que los managers obtienen visibilidad del cumplimiento individual y del equipo, lo que acelera las revisiones y la alineación del desempeño",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Salario promedio por hora de un manager",
-          "type": "currency"
-        },
-        {
-          "id": "q2",
-          "text": "Número de empleados involucrados en el proceso de metas y desempeño",
-          "type": "number"
-        },
-        {
-          "id": "q3",
-          "text": "Tiempo promedio de los managers en gestión de metas y desempeño por empleado al año (en horas)",
-          "type": "number"
-        }
-      ],
-      "baseLineFormula": "q1*q2*q3",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q3",
-      "kpiFormat": "percentage",
-      "leverDescription": "Tiempo promedio de los managers en gestión de metas y desempeño por empleado al año (en horas)",
-      "benefitMin": 10,
-      "benefitMax": 20,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780624053668",
-      "moduleIds": [
-        "1778715786536",
-        "1778715797687"
-      ],
-      "name": "Mejorar la eficiencia de la función de capacitación y desarrollo",
-      "leverValueDescription": "Mediante el uso de contenido listo para usar, creación simplificada, asignaciones automatizadas e informes integrados para optimizar las operaciones",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Número de empleados",
-          "type": "number"
-        },
-        {
-          "id": "q2",
-          "text": "Número de administradores de RRH que gestionan la capacitación y desarrollo",
-          "type": "number"
-        },
-        {
-          "id": "q3",
-          "text": "Salario promedio anual de un administrador de RR.HH.",
-          "type": "currency"
-        }
-      ],
-      "baseLineFormula": "q2*q3",
-      "baseLineFormat": "currency",
-      "kpiFormula": "(q2/q1)*100",
-      "kpiFormat": "number",
-      "leverDescription": "Número de administradores de RRH que gestionan la capacitación y desarrollo por cada 100 empleados",
-      "benefitMin": 10,
-      "benefitMax": 20,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780624638818",
-      "moduleIds": [
-        "1778715797687"
-      ],
-      "name": "Reducir el tiempo de los administradores que planifican la sucesión y el desarrollo de carrera",
-      "leverValueDescription": "Conectando las habilidades y aptitudes del perfil del puesto con la planificación de la sucesión y la carrera profesional para reducir la administración manual",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Salario promedio por hora de un FTE de RR.HH.",
-          "type": "currency"
-        },
-        {
-          "id": "q2",
-          "text": "Tiempo promedio de los FTEs de RR.HH. en gestión de sucesión y desarrollo por empleado al año (en horas)",
-          "type": "number"
-        },
-        {
-          "id": "q3",
-          "text": "Número de empleados involucrados en el proceso de Sucesión y desarrollo",
-          "type": "number"
-        }
-      ],
-      "baseLineFormula": "q1*q2*q3",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "number",
-      "leverDescription": "Tiempo promedio de los FTEs de RR.HH. en gestión de sucesión y desarrollo por empleado al año (en horas)",
-      "benefitMin": 10,
-      "benefitMax": 20,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780624899124",
-      "moduleIds": [
-        "1778715621919"
-      ],
-      "name": "Reducir el tiempo de los administradores que gestionan el proceso de Metas y desempeño",
-      "leverValueDescription": "Automatizando la creación de formularios, las derivaciones de objetivos y el enrutamiento de plantillas para minimizar la coordinación manual en todos los grupos de empleados",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Salario promedio por hora de un FTE de RR.HH.",
-          "type": "currency"
-        },
-        {
-          "id": "q2",
-          "text": "Tiempo promedio de los FTEs de RR.HH. en gestión de Metas y desempeño por empleado al año (en horas)",
-          "type": "number"
-        },
-        {
-          "id": "q3",
-          "text": "Número de empleados involucrados en el proceso de Metas y desempeño",
-          "type": "number"
-        }
-      ],
-      "baseLineFormula": "q1*q2*q3",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "number",
-      "leverDescription": "Tiempo promedio de los FTEs de RR.HH. en gestión de Metas y desempeño por empleado al año (en horas)",
-      "benefitMin": 15,
-      "benefitMax": 35,
-      "benefitType": "reduction"
-    },
-    {
-      "id": "1780625527251",
-      "moduleIds": [
-        "1778715797687"
-      ],
-      "name": "Reducir las vacantes en puestos críticos",
-      "leverValueDescription": "Mediante la creación de planes de desarrollo específicos y el seguimiento de la preparación para garantizar un suministro de sucesores cualificados para puestos clave",
-      "questions": [
-        {
-          "id": "q1",
-          "text": "Número de empleados",
-          "type": "number"
-        },
-        {
-          "id": "q2",
-          "text": "Puestos críticos vacantes (en %)",
-          "type": "percentage"
-        },
-        {
-          "id": "q3",
-          "text": "Personal en puestos críticos (en %)",
-          "type": "percentage"
-        },
-        {
-          "id": "q4",
-          "text": "Costo de una posición crítica vacante ",
-          "type": "currency"
-        }
-      ],
-      "baseLineFormula": "q1*q3*q2*q4",
-      "baseLineFormat": "currency",
-      "kpiFormula": "q2",
-      "kpiFormat": "percentage",
-      "leverDescription": "Puestos críticos vacantes (en %)",
-      "benefitMin": 10,
-      "benefitMax": 25,
+      "benefitMin": 1,
+      "benefitMax": 3,
       "benefitType": "reduction"
     }
   ],
