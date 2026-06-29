@@ -1180,10 +1180,39 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: ghHeaders(token),
             body: JSON.stringify(body)
         });
+        if (res.status === 409) throw new Error('GitHub rechazo la publicacion porque el archivo remoto cambio. Actualiza primero y vuelve a publicar.');
         if (!res.ok) throw new Error(`Error al subir archivo a GitHub (${res.status})`);
     };
 
+    const getPublishValidationError = () => {
+        if (!Array.isArray(levers) || levers.length === 0) {
+            return 'No puedes publicar porque no hay ninguna palanca configurada.';
+        }
+
+        const invalidLever = levers.find(lever => {
+            const moduleIds = lever.moduleIds || (lever.moduleId ? [lever.moduleId] : []);
+            return !lever.name
+                || !Array.isArray(lever.questions)
+                || lever.questions.length === 0
+                || !lever.baseLineFormula
+                || !lever.kpiFormula
+                || moduleIds.length === 0;
+        });
+
+        if (invalidLever) {
+            return `No puedes publicar porque la palanca "${invalidLever.name || 'Sin nombre'}" esta incompleta.`;
+        }
+
+        return '';
+    };
+
     publishConfigBtn.addEventListener('click', () => {
+        const validationError = getPublishValidationError();
+        if (validationError) {
+            showSyncStatus('Publicacion bloqueada', validationError, 'error');
+            return;
+        }
+
         executeWithAuth(async (token) => {
             const originalText = publishConfigBtn.innerHTML;
             publishConfigBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">cloud_upload</span> Publicando...';
