@@ -95,6 +95,10 @@
         .sync-buttons-container { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         #publish-config-btn { background-color: #0070F2; font-size: 0.85em; padding: 6px 12px; }
         #update-config-btn { background-color: var(--success-color); font-size: 0.85em; padding: 6px 12px; display: none; animation: pulse 2s infinite; }
+        #token-status-btn { background-color: #6c757d; font-size: 0.85em; padding: 6px 12px; }
+        #token-status-btn.valid { background-color: #1a8a52; }
+        #token-status-btn.invalid { background-color: #dc3545; }
+        #token-status-btn.checking { background-color: #6c757d; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
@@ -470,6 +474,9 @@
                     </button>
                     <button id="update-config-btn" title="Descargar la última versión oficial de las palancas">
                         <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">download</span> Actualizar palancas
+                    </button>
+                    <button id="token-status-btn" title="Verificar o cambiar token de GitHub">
+                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">key</span> Token: sin validar
                     </button>
                 </div>
                 <div class="total-benefit-container">
@@ -997,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const publishConfigBtn = document.getElementById('publish-config-btn');
     const updateConfigBtn = document.getElementById('update-config-btn');
+    const tokenStatusBtn = document.getElementById('token-status-btn');
     const resetTokenBtn = document.getElementById('resetTokenBtn');
     const forceUpdateBtn = document.getElementById('forceUpdateBtn');
     const tokenModal = document.getElementById('token-modal');
@@ -1024,13 +1032,15 @@ document.addEventListener('DOMContentLoaded', () => {
         syncStatusModal.style.display = 'none';
     });
 
-    const executeWithAuth = (actionCallback) => {
-        const token = localStorage.getItem(GH_TOKEN_KEY);
-        if (token) {
-            actionCallback(token);
-            return;
-        }
+    const setTokenIndicator = (state, label) => {
+        tokenStatusBtn.classList.remove('valid', 'invalid', 'checking');
+        tokenStatusBtn.classList.add(state);
+        tokenStatusBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">key</span> ${label}`;
+    };
 
+    const openTokenPrompt = (actionCallback) => {
+        setTokenIndicator('invalid', 'Token: requerido');
+        startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa un token valido para actualizar.</span>';
         tokenInput.value = '';
         tokenStatus.innerHTML = '';
         tokenModal.style.display = 'flex';
@@ -1047,16 +1057,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tokenStatus.innerHTML = '<span style="color:#555">Validando token...</span>';
+            setTokenIndicator('checking', 'Token: revisando');
             tokenSaveBtn.disabled = true;
 
             try {
                 await validateGitHubToken(valToken);
                 localStorage.setItem(GH_TOKEN_KEY, valToken);
                 tokenModal.style.display = 'none';
+                setTokenIndicator('valid', 'Token: activo');
                 showSyncStatus('Token aceptado', `Conexion exitosa con ${GH_CONFIG.REPO}. El token tiene permiso de escritura.`, 'success');
                 actionCallback(valToken);
             } catch (err) {
                 localStorage.removeItem(GH_TOKEN_KEY);
+                setTokenIndicator('invalid', 'Token: invalido');
                 const isInvalidToken = err.message.startsWith('TOKEN_INVALID');
                 const statusDetail = err.message.replace('TOKEN_INVALID', '').trim();
                 const message = err.message === 'TOKEN_NO_WRITE'
@@ -1072,10 +1085,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const executeWithAuth = async (actionCallback) => {
+        const token = localStorage.getItem(GH_TOKEN_KEY);
+        if (token) {
+            setTokenIndicator('checking', 'Token: revisando');
+            try {
+                await validateGitHubToken(token);
+                setTokenIndicator('valid', 'Token: activo');
+                actionCallback(token);
+            } catch (err) {
+                localStorage.removeItem(GH_TOKEN_KEY);
+                setTokenIndicator('invalid', 'Token: invalido');
+                openTokenPrompt(actionCallback);
+            }
+            return;
+        }
+
+        openTokenPrompt(actionCallback);
+    };
+
     tokenCancelBtn.addEventListener('click', () => { tokenModal.style.display = 'none'; });
+    tokenStatusBtn.addEventListener('click', () => {
+        executeWithAuth(() => {
+            showSyncStatus('Token activo', `El token esta activo para ${GH_CONFIG.REPO}.`, 'success');
+        });
+    });
     if (resetTokenBtn) {
         resetTokenBtn.addEventListener('click', () => {
             localStorage.removeItem(GH_TOKEN_KEY);
+            setTokenIndicator('invalid', 'Token: requerido');
             alert('Token eliminado de tu navegador. Se solicitará de nuevo en la próxima sincronización.');
         });
     }
@@ -1198,12 +1236,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.remoteConfigVersion) localStorage.setItem(LOCAL_VERSION_KEY, window.remoteConfigVersion);
 
             if (isStartupUpdate) {
-                sessionStorage.setItem('startupGitPullDone', 'true');
-                startupUpdateStatus.innerHTML = '<span style="color:#1a8a52">Actualizacion lista. Recargando...</span>';
+                levers = safeLevers;
+                modules = safeModules;
+                startupUpdateStatus.innerHTML = '<span style="color:#1a8a52">Actualizacion lista.</span>';
+                renderAllTabs();
+                resetConfigForm();
+                startupUpdateModal.style.display = 'none';
             } else {
                 alert('¡Las palancas se han actualizado con la versión oficial! La página se recargará.');
             }
-            location.reload();
         } catch (e) {
             if (isStartupUpdate) {
                 startupUpdateStatus.innerHTML = `<span style="color:#dc3545">No se pudo actualizar: ${e.message}</span>`;
@@ -2113,9 +2154,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app.switchTab = switchTab;
     renderAllTabs();
     resetConfigForm();
-    if (sessionStorage.getItem('startupGitPullDone') !== 'true') {
-        startupUpdateModal.style.display = 'flex';
-    }
+    startupUpdateModal.style.display = 'flex';
+    startupUpdateStatus.innerHTML = '<span style="color:#555">Verificando token y actualizando configuracion...</span>';
+    executeWithAuth((token) => executeDownload(token, { source: 'startup' }));
 });
 
 // ===== JAVASCRIPT DE INDICADORES FINANCIEROS =====
