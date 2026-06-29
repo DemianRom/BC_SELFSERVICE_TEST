@@ -99,6 +99,22 @@
         #token-status-btn.valid { background-color: #1a8a52; }
         #token-status-btn.invalid { background-color: #dc3545; }
         #token-status-btn.checking { background-color: #6c757d; }
+        .admin-gear-btn {
+            position: fixed;
+            left: 18px;
+            bottom: 18px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            background: #003B64;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .tab-btn.admin-locked { display: none; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
@@ -960,6 +976,23 @@
         <div id="metric-tooltip-popover" class="popover" style="width: 300px; font-size: 0.9rem; line-height: 1.4; pointer-events: none;"></div>
     </div>
 
+    <button id="admin-gear-btn" class="admin-gear-btn" title="Acceso administrador">
+        <span class="material-symbols-outlined" style="font-size: 1.6rem;">settings</span>
+    </button>
+
+    <div id="admin-password-modal" class="modal-overlay" style="z-index: 3002;">
+        <div class="modal-content" style="max-width: 420px; text-align: left;">
+            <h3 style="color: #003366; margin-bottom: 12px;">Acceso administrador</h3>
+            <p style="font-size: 0.95rem; color: #444; margin-bottom: 14px;">Ingresa la contraseña para habilitar la seccion de Configuracion.</p>
+            <input type="password" id="admin-password-input" autocomplete="off" placeholder="Contraseña" style="width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 5px;">
+            <div id="admin-password-status" style="font-size: 0.85rem; min-height: 20px; margin-bottom: 14px;"></div>
+            <div class="modal-buttons" style="justify-content: flex-end;">
+                <button id="admin-cancel-btn" style="background: #e0e0e0; color: #333;">Cancelar</button>
+                <button id="admin-unlock-btn" style="background: #0056b3; color: white; border: none;">Desbloquear</button>
+            </div>
+        </div>
+    </div>
+
     <div id="token-modal" class="modal-overlay" style="z-index: 3000;">
         <div class="modal-content" style="max-width: 500px; text-align: left;">
             <h3 style="color: #003366; margin-bottom: 15px;">Autenticación requerida</h3>
@@ -1347,6 +1380,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const importBtn = document.getElementById('importBtn');
     const importFile = document.getElementById('importFile');
     const clearStorageBtn = document.getElementById('clearStorageBtn');
+    const adminGearBtn = document.getElementById('admin-gear-btn');
+    const adminPasswordModal = document.getElementById('admin-password-modal');
+    const adminPasswordInput = document.getElementById('admin-password-input');
+    const adminPasswordStatus = document.getElementById('admin-password-status');
+    const adminUnlockBtn = document.getElementById('admin-unlock-btn');
+    const adminCancelBtn = document.getElementById('admin-cancel-btn');
+    const ADMIN_PASSWORD = 'admin123';
+    let isAdminUnlocked = sessionStorage.getItem('adminConfigUnlocked') === 'true';
 
     const moduleForm = document.getElementById('moduleForm');
     const moduleList = document.getElementById('moduleList');
@@ -1443,7 +1484,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA DE NAVEGACIÓN POR PESTAÑAS ---
     const tabButtons = document.querySelectorAll('.tab-btn');
     const views = document.querySelectorAll('.view');
+    const configTabButton = document.querySelector('.tab-btn[data-tab="configView"]');
+    const updateAdminAccessUI = () => {
+        if (!configTabButton) return;
+        configTabButton.classList.toggle('admin-locked', !isAdminUnlocked);
+    };
+    const unlockAdminConfig = () => {
+        isAdminUnlocked = true;
+        sessionStorage.setItem('adminConfigUnlocked', 'true');
+        updateAdminAccessUI();
+        adminPasswordModal.style.display = 'none';
+        switchTab('configView');
+    };
     const switchTab = (targetTab) => {
+        if (targetTab === 'configView' && !isAdminUnlocked) {
+            adminPasswordStatus.textContent = '';
+            adminPasswordInput.value = '';
+            adminPasswordModal.style.display = 'flex';
+            setTimeout(() => adminPasswordInput.focus(), 0);
+            return;
+        }
         views.forEach(view => view.classList.remove('active'));
         const targetView = document.getElementById(targetTab);
         targetView?.classList.add('active');
@@ -1456,6 +1516,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     tabButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
+    updateAdminAccessUI();
+
+    adminGearBtn.addEventListener('click', () => {
+        if (isAdminUnlocked) {
+            switchTab('configView');
+            return;
+        }
+        adminPasswordStatus.textContent = '';
+        adminPasswordInput.value = '';
+        adminPasswordModal.style.display = 'flex';
+        setTimeout(() => adminPasswordInput.focus(), 0);
+    });
+    adminCancelBtn.addEventListener('click', () => {
+        adminPasswordModal.style.display = 'none';
+    });
+    adminUnlockBtn.addEventListener('click', () => {
+        if (adminPasswordInput.value === ADMIN_PASSWORD) {
+            unlockAdminConfig();
+        } else {
+            adminPasswordStatus.innerHTML = '<span style="color:#dc3545">Contraseña incorrecta.</span>';
+            adminPasswordInput.select();
+        }
+    });
+    adminPasswordInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') adminUnlockBtn.click();
+    });
 
     // --- RENDERIZADO DE VISTAS ---
     const renderAllTabs = () => {
@@ -1917,6 +2003,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         editLever: (index) => {
+            if (!isAdminUnlocked) {
+                switchTab('configView');
+                return;
+            }
             const lever = levers[index];
             formTitle.textContent = 'Editando Palanca de Valor';
             leverIdInput.value = lever.id; // <-- ESTA LÍNEA FALTABA
