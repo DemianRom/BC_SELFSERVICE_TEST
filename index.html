@@ -114,6 +114,7 @@
             background: #003B64;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
+        .admin-gear-btn.active { background: #1a8a52; }
         .tab-btn.admin-locked { display: none; }
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
@@ -485,12 +486,6 @@
             <h1>Calculadora de Beneficios</h1>
             <div class="header-right">
                 <div class="sync-buttons-container">
-                    <button id="publish-config-btn" title="Subir las palancas y módulos actuales al repositorio oficial para todos">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">cloud_upload</span> Publicar palancas
-                    </button>
-                    <button id="update-config-btn" title="Descargar la última versión oficial de las palancas">
-                        <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">download</span> Actualizar palancas
-                    </button>
                     <button id="token-status-btn" title="Verificar o cambiar token de GitHub">
                         <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">key</span> Token: sin validar
                     </button>
@@ -909,7 +904,17 @@
 
             <details class="card" open>
                 <summary><h2>Palancas Existentes</h2></summary>
-                <div class="details-content" id="configList"></div>
+                <div class="details-content">
+                    <div class="io-buttons" style="margin-bottom: 16px;">
+                        <button id="publish-config-btn" title="Subir las palancas y modulos actuales al repositorio oficial para todos">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">cloud_upload</span> Publicar palancas
+                        </button>
+                        <button id="update-config-btn" class="success" title="Descargar la ultima version oficial de las palancas">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">download</span> Actualizar palancas
+                        </button>
+                    </div>
+                    <div id="configList"></div>
+                </div>
             </details>
 
             <details class="card" open>
@@ -1240,9 +1245,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     publishConfigBtn.addEventListener('click', () => {
+        if (!isAdminUnlocked) {
+            showSyncStatus('Publicación bloqueada', 'Solo el administrador puede publicar palancas.', 'error');
+            return;
+        }
+
         const validationError = getPublishValidationError();
         if (validationError) {
-            showSyncStatus('Publicacion bloqueada', validationError, 'error');
+            showSyncStatus('Publicación bloqueada', validationError, 'error');
             return;
         }
 
@@ -1337,8 +1347,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    updateConfigBtn.addEventListener('click', () => { executeWithAuth(executeDownload); });
-    if (forceUpdateBtn) forceUpdateBtn.addEventListener('click', () => { executeWithAuth(executeDownload); });
+    updateConfigBtn.addEventListener('click', () => {
+        if (!isAdminUnlocked) {
+            showSyncStatus('Actualización bloqueada', 'Solo el administrador puede actualizar las palancas manualmente.', 'error');
+            return;
+        }
+        executeWithAuth(executeDownload);
+    });
+    if (forceUpdateBtn) forceUpdateBtn.addEventListener('click', () => {
+        if (!isAdminUnlocked) {
+            showSyncStatus('Actualización bloqueada', 'Solo el administrador puede actualizar las palancas manualmente.', 'error');
+            return;
+        }
+        executeWithAuth(executeDownload);
+    });
     startupUpdateBtn.addEventListener('click', () => {
         executeWithAuth((token) => executeDownload(token, { source: 'startup' }));
     });
@@ -1488,6 +1510,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateAdminAccessUI = () => {
         if (!configTabButton) return;
         configTabButton.classList.toggle('admin-locked', !isAdminUnlocked);
+        adminGearBtn.classList.toggle('active', isAdminUnlocked);
+        adminGearBtn.title = isAdminUnlocked ? 'Cerrar modo administrador' : 'Acceso administrador';
     };
     const unlockAdminConfig = () => {
         isAdminUnlocked = true;
@@ -1495,6 +1519,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAdminAccessUI();
         adminPasswordModal.style.display = 'none';
         switchTab('configView');
+    };
+    const lockAdminConfig = () => {
+        isAdminUnlocked = false;
+        sessionStorage.removeItem('adminConfigUnlocked');
+        updateAdminAccessUI();
+        adminPasswordModal.style.display = 'none';
+        if (document.getElementById('configView')?.classList.contains('active')) {
+            switchTab('ingresoView');
+        }
     };
     const switchTab = (targetTab) => {
         if (targetTab === 'configView' && !isAdminUnlocked) {
@@ -1520,7 +1553,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     adminGearBtn.addEventListener('click', () => {
         if (isAdminUnlocked) {
-            switchTab('configView');
+            lockAdminConfig();
+            showSyncStatus('Modo admin cerrado', 'La sección de Configuración quedó bloqueada.', 'info');
             return;
         }
         adminPasswordStatus.textContent = '';
