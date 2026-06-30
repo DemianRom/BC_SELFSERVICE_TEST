@@ -1059,6 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startupUpdateBtn = document.getElementById('startup-update-btn');
     const startupContinueBtn = document.getElementById('startup-continue-btn');
     const startupUpdateStatus = document.getElementById('startup-update-status');
+    let pendingTokenAction = null;
 
     const showSyncStatus = (title, message, type = 'info') => {
         const colors = { success: '#1a8a52', error: '#dc3545', info: '#003366' };
@@ -1079,6 +1080,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const openTokenPrompt = (actionCallback) => {
+        if (!isAdminUnlocked) {
+            pendingTokenAction = actionCallback;
+            startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa como administrador para configurar el token oficial.</span>';
+            adminPasswordStatus.textContent = 'Ingresa la contraseña de administrador para configurar el token oficial.';
+            adminPasswordInput.value = '';
+            adminPasswordModal.style.display = 'flex';
+            setTimeout(() => adminPasswordInput.focus(), 0);
+            return;
+        }
+
         setTokenIndicator('invalid', 'Token: requerido');
         startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa un token valido para actualizar.</span>';
         tokenInput.value = '';
@@ -1146,12 +1157,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tokenCancelBtn.addEventListener('click', () => { tokenModal.style.display = 'none'; });
     tokenStatusBtn.addEventListener('click', () => {
+        if (!isAdminUnlocked) {
+            showSyncStatus('Token protegido', 'Solo el administrador puede verificar o cambiar el token oficial.', 'info');
+            return;
+        }
         executeWithAuth(() => {
             showSyncStatus('Token activo', `El token esta activo para ${GH_CONFIG.REPO}.`, 'success');
         });
     });
     if (resetTokenBtn) {
         resetTokenBtn.addEventListener('click', () => {
+            if (!isAdminUnlocked) {
+                showSyncStatus('Token protegido', 'Solo el administrador puede eliminar el token oficial.', 'error');
+                return;
+            }
             localStorage.removeItem(GH_TOKEN_KEY);
             setTokenIndicator('invalid', 'Token: requerido');
             alert('Token eliminado de tu navegador. Se solicitará de nuevo en la próxima sincronización.');
@@ -1518,10 +1537,17 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.setItem('adminConfigUnlocked', 'true');
         updateAdminAccessUI();
         adminPasswordModal.style.display = 'none';
+        if (pendingTokenAction) {
+            const actionToRun = pendingTokenAction;
+            pendingTokenAction = null;
+            openTokenPrompt(actionToRun);
+            return;
+        }
         switchTab('configView');
     };
     const lockAdminConfig = () => {
         isAdminUnlocked = false;
+        pendingTokenAction = null;
         sessionStorage.removeItem('adminConfigUnlocked');
         updateAdminAccessUI();
         adminPasswordModal.style.display = 'none';
