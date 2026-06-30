@@ -988,12 +988,12 @@
     <div id="admin-password-modal" class="modal-overlay" style="z-index: 3002;">
         <div class="modal-content" style="max-width: 420px; text-align: left;">
             <h3 style="color: #003366; margin-bottom: 12px;">Acceso administrador</h3>
-            <p style="font-size: 0.95rem; color: #444; margin-bottom: 14px;">Ingresa la contraseña para habilitar la seccion de Configuracion.</p>
-            <input type="password" id="admin-password-input" autocomplete="off" placeholder="Contraseña" style="width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 5px;">
+            <p style="font-size: 0.95rem; color: #444; margin-bottom: 14px;">Ingresa el token oficial del administrador para habilitar Configuración y escritura en GitHub.</p>
+            <input type="password" id="admin-password-input" autocomplete="off" placeholder="Token de administrador" style="width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 5px;">
             <div id="admin-password-status" style="font-size: 0.85rem; min-height: 20px; margin-bottom: 14px;"></div>
             <div class="modal-buttons" style="justify-content: flex-end;">
                 <button id="admin-cancel-btn" style="background: #e0e0e0; color: #333;">Cancelar</button>
-                <button id="admin-unlock-btn" style="background: #0056b3; color: white; border: none;">Desbloquear</button>
+                <button id="admin-unlock-btn" style="background: #0056b3; color: white; border: none;">Validar token</button>
             </div>
         </div>
     </div>
@@ -1080,15 +1080,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const openTokenPrompt = (actionCallback) => {
-        if (!isAdminUnlocked) {
-            pendingTokenAction = actionCallback;
-            startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa como administrador para configurar el token oficial.</span>';
-            adminPasswordStatus.textContent = 'Ingresa la contraseña de administrador para configurar el token oficial.';
-            adminPasswordInput.value = '';
-            adminPasswordModal.style.display = 'flex';
-            setTimeout(() => adminPasswordInput.focus(), 0);
-            return;
-        }
+        pendingTokenAction = actionCallback;
+        setTokenIndicator('invalid', 'Token: requerido');
+        startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa el token oficial del administrador para actualizar.</span>';
+        adminPasswordStatus.textContent = 'El token se validará contra GitHub antes de habilitar el modo admin.';
+        adminPasswordInput.value = '';
+        adminPasswordModal.style.display = 'flex';
+        setTimeout(() => adminPasswordInput.focus(), 0);
+        return;
 
         setTokenIndicator('invalid', 'Token: requerido');
         startupUpdateStatus.innerHTML = '<span style="color:#555">Ingresa un token valido para actualizar.</span>';
@@ -1427,8 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminPasswordStatus = document.getElementById('admin-password-status');
     const adminUnlockBtn = document.getElementById('admin-unlock-btn');
     const adminCancelBtn = document.getElementById('admin-cancel-btn');
-    const ADMIN_PASSWORD = 'admin123';
-    let isAdminUnlocked = sessionStorage.getItem('adminConfigUnlocked') === 'true';
+    let isAdminUnlocked = false;
 
     const moduleForm = document.getElementById('moduleForm');
     const moduleList = document.getElementById('moduleList');
@@ -1532,7 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminGearBtn.classList.toggle('active', isAdminUnlocked);
         adminGearBtn.title = isAdminUnlocked ? 'Cerrar modo administrador' : 'Acceso administrador';
     };
-    const unlockAdminConfig = () => {
+    const unlockAdminConfig = (validatedToken = null) => {
         isAdminUnlocked = true;
         sessionStorage.setItem('adminConfigUnlocked', 'true');
         updateAdminAccessUI();
@@ -1540,7 +1538,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pendingTokenAction) {
             const actionToRun = pendingTokenAction;
             pendingTokenAction = null;
-            openTokenPrompt(actionToRun);
+            if (validatedToken) {
+                actionToRun(validatedToken);
+            } else {
+                executeWithAuth(actionToRun);
+            }
             return;
         }
         switchTab('configView');
@@ -1591,12 +1593,34 @@ document.addEventListener('DOMContentLoaded', () => {
     adminCancelBtn.addEventListener('click', () => {
         adminPasswordModal.style.display = 'none';
     });
-    adminUnlockBtn.addEventListener('click', () => {
-        if (adminPasswordInput.value === ADMIN_PASSWORD) {
-            unlockAdminConfig();
-        } else {
-            adminPasswordStatus.innerHTML = '<span style="color:#dc3545">Contraseña incorrecta.</span>';
+    adminUnlockBtn.addEventListener('click', async () => {
+        const adminToken = adminPasswordInput.value.trim();
+        if (!adminToken) {
+            adminPasswordStatus.innerHTML = '<span style="color:#dc3545">Ingresa el token de administrador.</span>';
+            adminPasswordInput.focus();
+            return;
+        }
+
+        adminPasswordStatus.innerHTML = '<span style="color:#555">Validando token con GitHub...</span>';
+        setTokenIndicator('checking', 'Token: revisando');
+        adminUnlockBtn.disabled = true;
+
+        try {
+            await validateGitHubToken(adminToken);
+            localStorage.setItem(GH_TOKEN_KEY, adminToken);
+            setTokenIndicator('valid', 'Token: activo');
+            adminPasswordStatus.innerHTML = '';
+            unlockAdminConfig(adminToken);
+        } catch (err) {
+            localStorage.removeItem(GH_TOKEN_KEY);
+            setTokenIndicator('invalid', 'Token: inválido');
+            const message = err.message === 'TOKEN_NO_WRITE'
+                ? 'El token es válido, pero no tiene permiso de escritura sobre el repositorio.'
+                : 'Token inválido o sin acceso al repositorio oficial.';
+            adminPasswordStatus.innerHTML = `<span style="color:#dc3545">${message}</span>`;
             adminPasswordInput.select();
+        } finally {
+            adminUnlockBtn.disabled = false;
         }
     });
     adminPasswordInput.addEventListener('keydown', (event) => {
